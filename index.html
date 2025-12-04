@@ -32,15 +32,13 @@
             100% { transform: rotate(360deg); }
         }
         .stock-table-container {
-            overflow-x: auto;
+            /* overflow-x: auto; ไม่จำเป็นต้องเลื่อนแนวนอนแล้วในโหมดแนวตั้ง แต่เก็บไว้เผื่อจอเล็กมาก */
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
         }
         .stock-table th, .stock-table td {
-            padding: 0.75rem 1rem;
-            min-width: 90px;
-            white-space: nowrap;
-            text-align: center;
+            padding: 1rem; /* เพิ่มพื้นที่ padding ให้กดง่ายขึ้นในมือถือ */
         }
         /* Fade in animation for modal */
         .modal-fade-in {
@@ -137,10 +135,10 @@
                         
                         <div class="stock-table-container">
                             <table id="stockTable" class="stock-table w-full text-sm text-gray-500 border-collapse">
-                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                                    <!-- Headers -->
+                                <thead class="text-base text-gray-700 uppercase bg-gray-100">
+                                    <!-- Headers จะถูกสร้างใหม่ใน JS ให้เป็น 2 คอลัมน์ -->
                                 </thead>
-                                <tbody>
+                                <tbody class="divide-y divide-gray-200">
                                     <!-- Rows -->
                                 </tbody>
                             </table>
@@ -361,18 +359,24 @@
                 document.getElementById('productCodeDisplay').textContent = code.toUpperCase();
                 document.getElementById('productName').textContent = p.name;
                 
-                // Render Table
+                // Render Table (Vertical Layout)
                 const thead = document.querySelector('#stockTable thead');
                 const tbody = document.querySelector('#stockTable tbody');
                 const lowStockMsg = document.getElementById('lowStockMessage');
                 
-                let headHTML = '<tr>';
-                let bodyHTML = '<tr>';
+                // ส่วนหัวตารางใหม่ (2 คอลัมน์)
+                let headHTML = `
+                    <tr>
+                        <th scope="col" class="px-6 py-3 bg-gray-100 border-b text-left text-gray-600 font-bold w-2/3">ขนาด (ความกว้าง)</th>
+                        <th scope="col" class="px-6 py-3 bg-gray-100 border-b text-right text-gray-600 font-bold w-1/3">คงเหลือ (ใบ)</th>
+                    </tr>
+                `;
+                
+                let bodyHTML = '';
                 let hasLowStock = false;
 
+                // วนลูปสร้างแถวแนวนอนทีละขนาด
                 for (const size of Object.keys(STOCK_COLUMNS)) {
-                    headHTML += `<th scope="col" class="px-4 py-3 bg-gray-50 border-b">${size}</th>`;
-                    
                     const qty = p.stocks[size];
                     let colorClass = 'text-gray-900 font-bold';
                     let bgClass = '';
@@ -381,19 +385,24 @@
                         colorClass = 'text-gray-300';
                     } else if (qty < 20) {
                         colorClass = 'text-red-600 font-extrabold';
-                        bgClass = 'bg-red-50';
+                        bgClass = 'bg-red-50'; // ไฮไลท์ทั้งช่องจำนวน
                         hasLowStock = true;
                     } else {
                         colorClass = 'text-green-700 font-bold';
                     }
 
-                    bodyHTML += `<td class="px-4 py-3 border-b ${bgClass}">
-                        <span class="${colorClass} text-lg block">${qty.toLocaleString()}</span>
-                    </td>`;
+                    // สร้างแถว (Row) สำหรับแต่ละขนาด
+                    bodyHTML += `
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 text-left border-b font-medium text-gray-800">
+                                ${size}
+                            </td>
+                            <td class="px-6 py-4 text-right border-b ${bgClass}">
+                                <span class="${colorClass} text-xl block">${qty.toLocaleString()}</span>
+                            </td>
+                        </tr>
+                    `;
                 }
-                
-                headHTML += '</tr>';
-                bodyHTML += '</tr>';
                 
                 thead.innerHTML = headHTML;
                 tbody.innerHTML = bodyHTML;
