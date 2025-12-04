@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบตรวจสอบสต็อกสินค้า</title>
+    <title>ระบบเช็คสต็อกมู่ลี่ไม้ - SUNNY</title>
     <!-- โหลด Tailwind CSS สำหรับการจัดสไตล์ -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -50,98 +50,126 @@
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
         }
+
+        /* สร้างลวดลายมู่ลี่ไม้ด้วย CSS */
+        .wooden-blinds-bg {
+            background-color: transparent;
+            background-image: repeating-linear-gradient(
+                180deg,
+                rgba(210, 180, 140, 0.15) 0px,      /* สีไม้จางๆ */
+                rgba(210, 180, 140, 0.15) 15px,
+                rgba(139, 69, 19, 0.1) 16px,        /* เงาขอบไม้ */
+                rgba(139, 69, 19, 0.1) 18px,
+                transparent 18px,
+                transparent 22px
+            );
+            border-bottom: 2px solid rgba(139, 69, 19, 0.1);
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 font-sans">
 
-    <div class="w-full max-w-3xl bg-white p-8 rounded-xl shadow-2xl relative">
+    <div class="w-full max-w-3xl bg-white p-0 rounded-xl shadow-2xl relative overflow-hidden">
         
-        <!-- ปุ่มแสดงวิธีใช้ (Help Button) -->
-        <button onclick="toggleHelpModal(true)" class="absolute top-6 right-6 bg-red-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-700 flex items-center gap-2 transition-all duration-200 transform hover:scale-105">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="text-sm font-bold">วิธีใช้</span>
-        </button>
-
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center pr-10">
-            ระบบตรวจสอบสต็อกสินค้า
-        </h1>
-
-        <div class="mb-6 flex gap-4">
-            <input
-                type="text"
-                id="productCodeInput"
-                placeholder="กรอกรหัสสินค้า (เช่น B35-34)"
-                class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg shadow-sm"
-                onkeypress="if(event.key === 'Enter') searchProduct()"
-            >
-            <button
-                id="searchButton"
-                onclick="searchProduct()"
-                class="flex-shrink-0 bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-150 ease-in-out shadow-md disabled:opacity-50 flex items-center justify-center"
-            >
-                ค้นหา
-            </button>
-        </div>
-
-        <div id="resultContainer" class="mt-8">
-            <p id="initialMessage" class="text-center text-gray-500">
-                กรุณากรอกรหัสสินค้าแล้วกด 'ค้นหา' เพื่อดูข้อมูล
-            </p>
-
-            <div id="loadingIndicator" class="hidden flex justify-center items-center py-4">
-                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
-                <span class="ml-3 text-blue-600 font-medium">กำลังโหลดข้อมูลล่าสุด...</span>
-            </div>
-
-            <div id="productCard" class="hidden bg-white p-0 rounded-lg shadow-lg border border-gray-200">
-                <div class="bg-blue-600 p-6 rounded-t-lg text-white">
-                     <p class="text-sm font-medium opacity-80">รหัสสินค้า</p>
-                     <h2 class="text-3xl font-bold" id="productCodeDisplay"></h2>
-                     <p class="text-lg mt-2 opacity-90" id="productName"></p>
-                </div>
-                
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-gray-800">📦 จำนวนคงเหลือ (ใบ)</h3>
-                        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">รวมยอดทุกบรรทัดของรหัสนี้</span>
-                    </div>
-                    
-                    <div class="stock-table-container">
-                        <table id="stockTable" class="stock-table w-full text-sm text-gray-500 border-collapse">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                                <!-- Headers -->
-                            </thead>
-                            <tbody>
-                                <!-- Rows -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div id="lowStockMessage" class="hidden mt-4 text-center p-3 text-sm font-medium text-red-700 bg-red-100 rounded-lg border border-red-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        มีสินค้าบางรายการใกล้หมด (ต่ำกว่า 20 ชิ้น)
-                    </div>
-                </div>
-            </div>
-
-            <div id="errorMessage" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3" role="alert">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <!-- ส่วนหัวที่มีพื้นหลังลายมู่ลี่ -->
+        <div class="wooden-blinds-bg p-8 text-center relative">
+            <!-- ปุ่มแสดงวิธีใช้ (Help Button) -->
+            <button onclick="toggleHelpModal(true)" class="absolute top-6 right-6 bg-red-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-700 flex items-center gap-2 transition-all duration-200 transform hover:scale-105 z-20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <div>
-                    <p class="font-bold">ไม่พบข้อมูล</p>
-                    <p id="errorText"></p>
-                </div>
+                <span class="text-sm font-bold">วิธีใช้</span>
+            </button>
+
+            <!-- โลโก้ SUNNY -->
+            <div class="mb-2 relative z-10">
+                <h1 class="text-5xl font-extrabold text-red-600 tracking-wider italic" style="font-family: 'Arial Black', sans-serif; text-shadow: 2px 2px 0px rgba(0,0,0,0.1);">
+                    SUNNY
+                </h1>
             </div>
+
+            <!-- ชื่อระบบ -->
+            <h2 class="text-3xl font-bold text-gray-800 relative z-10 bg-white/60 inline-block px-4 py-1 rounded-full backdrop-blur-sm">
+                ระบบเช็คสต็อกมู่ลี่ไม้
+            </h2>
         </div>
 
-        <p class="mt-8 text-xs text-gray-400 text-center">
-            Last Updated: <span id="lastUpdateDisplay">-</span>
-        </p>
+        <div class="p-8 pt-4">
+            <div class="mb-6 flex gap-4">
+                <input
+                    type="text"
+                    id="productCodeInput"
+                    placeholder="กรอกรหัสสินค้า (เช่น B35-34)"
+                    class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg shadow-sm"
+                    onkeypress="if(event.key === 'Enter') searchProduct()"
+                >
+                <button
+                    id="searchButton"
+                    onclick="searchProduct()"
+                    class="flex-shrink-0 bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-150 ease-in-out shadow-md disabled:opacity-50 flex items-center justify-center"
+                >
+                    ค้นหา
+                </button>
+            </div>
+
+            <div id="resultContainer" class="mt-8">
+                <p id="initialMessage" class="text-center text-gray-500">
+                    กรุณากรอกรหัสสินค้าแล้วกด 'ค้นหา' เพื่อดูข้อมูล
+                </p>
+
+                <div id="loadingIndicator" class="hidden flex justify-center items-center py-4">
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                    <span class="ml-3 text-blue-600 font-medium">กำลังโหลดข้อมูลล่าสุด...</span>
+                </div>
+
+                <div id="productCard" class="hidden bg-white p-0 rounded-lg shadow-lg border border-gray-200">
+                    <div class="bg-blue-600 p-6 rounded-t-lg text-white">
+                         <p class="text-sm font-medium opacity-80">รหัสสินค้า</p>
+                         <h2 class="text-3xl font-bold" id="productCodeDisplay"></h2>
+                         <p class="text-lg mt-2 opacity-90" id="productName"></p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">📦 จำนวนคงเหลือ (ใบ)</h3>
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">รวมยอดทุกบรรทัดของรหัสนี้</span>
+                        </div>
+                        
+                        <div class="stock-table-container">
+                            <table id="stockTable" class="stock-table w-full text-sm text-gray-500 border-collapse">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <!-- Headers -->
+                                </thead>
+                                <tbody>
+                                    <!-- Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="lowStockMessage" class="hidden mt-4 text-center p-3 text-sm font-medium text-red-700 bg-red-100 rounded-lg border border-red-300 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            มีสินค้าบางรายการใกล้หมด (ต่ำกว่า 20 ชิ้น)
+                        </div>
+                    </div>
+                </div>
+
+                <div id="errorMessage" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3" role="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                        <p class="font-bold">ไม่พบข้อมูล</p>
+                        <p id="errorText"></p>
+                    </div>
+                </div>
+            </div>
+
+            <p class="mt-8 text-xs text-gray-400 text-center">
+                Last Updated: <span id="lastUpdateDisplay">-</span>
+            </p>
+        </div>
 
     </div>
 
