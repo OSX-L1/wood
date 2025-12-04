@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบตรวจสอบสต็อกสินค้า</title>
+    <!-- โหลด Tailwind CSS สำหรับการจัดสไตล์ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .loader {
+            border-top-color: #3b82f6;
+            -webkit-animation: spin 1s ease-in-out infinite;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stock-table-container {
+            overflow-x: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .stock-table th, .stock-table td {
+            padding: 0.75rem 1rem;
+            min-width: 90px;
+            white-space: nowrap;
+            text-align: center;
+        }
+        /* Fade in animation for modal */
+        .modal-fade-in {
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="w-full max-w-3xl bg-white p-8 rounded-xl shadow-2xl relative">
+        
+        <!-- ปุ่มแสดงวิธีใช้ (Help Button) -->
+        <button onclick="toggleHelpModal(true)" class="absolute top-6 right-6 bg-red-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-700 flex items-center gap-2 transition-all duration-200 transform hover:scale-105">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-sm font-bold">วิธีใช้</span>
+        </button>
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center pr-10">
+            ระบบตรวจสอบสต็อกสินค้า
+        </h1>
+
+        <div class="mb-6 flex gap-4">
+            <input
+                type="text"
+                id="productCodeInput"
+                placeholder="กรอกรหัสสินค้า (เช่น B35-34)"
+                class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg shadow-sm"
+                onkeypress="if(event.key === 'Enter') searchProduct()"
+            >
+            <button
+                id="searchButton"
+                onclick="searchProduct()"
+                class="flex-shrink-0 bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-150 ease-in-out shadow-md disabled:opacity-50 flex items-center justify-center"
+            >
+                ค้นหา
+            </button>
+        </div>
+
+        <div id="resultContainer" class="mt-8">
+            <p id="initialMessage" class="text-center text-gray-500">
+                กรุณากรอกรหัสสินค้าแล้วกด 'ค้นหา' เพื่อดูข้อมูล
+            </p>
+
+            <div id="loadingIndicator" class="hidden flex justify-center items-center py-4">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                <span class="ml-3 text-blue-600 font-medium">กำลังโหลดข้อมูลล่าสุด...</span>
+            </div>
+
+            <div id="productCard" class="hidden bg-white p-0 rounded-lg shadow-lg border border-gray-200">
+                <div class="bg-blue-600 p-6 rounded-t-lg text-white">
+                     <p class="text-sm font-medium opacity-80">รหัสสินค้า</p>
+                     <h2 class="text-3xl font-bold" id="productCodeDisplay"></h2>
+                     <p class="text-lg mt-2 opacity-90" id="productName"></p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">📦 จำนวนคงเหลือ (ใบ)</h3>
+                        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">รวมยอดทุกบรรทัดของรหัสนี้</span>
+                    </div>
+                    
+                    <div class="stock-table-container">
+                        <table id="stockTable" class="stock-table w-full text-sm text-gray-500 border-collapse">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <!-- Headers -->
+                            </thead>
+                            <tbody>
+                                <!-- Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="lowStockMessage" class="hidden mt-4 text-center p-3 text-sm font-medium text-red-700 bg-red-100 rounded-lg border border-red-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        มีสินค้าบางรายการใกล้หมด (ต่ำกว่า 20 ชิ้น)
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorMessage" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-start gap-3" role="alert">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <p class="font-bold">ไม่พบข้อมูล</p>
+                    <p id="errorText"></p>
+                </div>
+            </div>
+        </div>
+
+        <p class="mt-8 text-xs text-gray-400 text-center">
+            Last Updated: <span id="lastUpdateDisplay">-</span>
+        </p>
+
+    </div>
+
+    <!-- Help Modal (Popup) -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 modal-fade-in relative">
+            <button onclick="toggleHelpModal(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                วิธีใช้
+            </h3>
+            
+            <div class="space-y-4 text-gray-700 text-sm md:text-base leading-relaxed">
+                <p>
+                    <span class="font-bold text-blue-600">•</span> กรอกรหัสที่ต้องการเช็คในช่องว่าง
+                </p>
+                <p>
+                    <span class="font-bold text-blue-600">•</span> โดยให้พิมพ์ตัวอักษรภาษาอังกฤษก่อน และตามด้วยเครื่องหมาย <strong>-</strong> และตามด้วยตัวเลข<br>
+                    <span class="text-gray-500 text-sm ml-4">เช่น <strong>B35-30</strong> , <strong>SA-15</strong> , <strong>FW-510</strong> , <strong>FW-356</strong></span>
+                </p>
+                <p>
+                    <span class="font-bold text-blue-600">•</span> กดปุ่ม <strong>ค้นหา</strong> ระบบจะแสดงข้อมูลสต็อกคงเหลือขึ้นมาทันที
+                </p>
+                <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                    <p class="mb-2">
+                        <span class="font-bold text-blue-600">•</span> ตัวเลข 4ft (1.22 ม.), 4.5ft (1.37 ม.), 5ft (1.52 ม.) หมายถึงความกว้างของใบมู่ลี่
+                    </p>
+                    <p class="font-medium">
+                        กรณีที่เหลือ ให้ดูที่ 8FT ลงมาเรื่อยๆ
+                    </p>
+                    <p class="text-sm mt-2 text-gray-600 italic">
+                        "เช่น ขนาดมู่ลี่ที่ลูกค้าต้องการสั่ง คือ กว้าง 168x200 แต่ขนาด 5.5FT หมด แต่ขนาด 8FT มี <strong>ลูกค้าก็สามารถสั่งได้ (ไม่ได้คิดเงินเพิ่ม) เราจะนำใบ 8FT มาตัดให้ลูกค้าเอง</strong>"
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="toggleHelpModal(false)" class="mt-6 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-semibold">
+                เข้าใจแล้ว
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv';
+        
+        let productDataCache = null; 
+
+        // การตั้งค่า Column Index ตามภาพ (A=0, B=1, C=2, D=3, E=4...)
+        // เพิ่มหน่วยเมตรใน Key เพื่อให้แสดงผลในตารางอัตโนมัติ
+        const STOCK_COLUMNS = {
+            '4ft (1.22 ม.)': 4,
+            '4.5ft (1.37 ม.)': 6,
+            '5ft (1.52 ม.)': 8,
+            '5.5ft (1.68 ม.)': 10,
+            '6ft (1.83 ม.)': 12,
+            '6.5ft (1.98 ม.)': 14,
+            '7ft (2.13 ม.)': 16,
+            '8ft (2.44 ม.)': 18
+        };
+        const NAME_COLUMN_INDEX = 1; // คอลัมน์ B
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const data = {};
+            let lastProductCode = null; // ตัวแปรจำรหัสสินค้าบรรทัดก่อนหน้า (สำหรับ Merged Cells)
+
+            // เริ่มวนลูปตั้งแต่บรรทัดที่ 2 (index 1) เพื่อข้าม Header บรรทัดแรก
+            // *หมายเหตุ: ถ้า Header มี 2 บรรทัด อาจต้องเริ่มที่ index 2 หรือ 3 แล้วแต่ไฟล์
+            // จากภาพ Header หลักอยู่บรรทัด 1, Header ย่อยอยู่บรรทัด 2, ข้อมูลเริ่มบรรทัด 3
+            // ดังนั้นเราจะเริ่ม i = 2
+            
+            for (let i = 2; i < lines.length; i++) {
+                // ใช้ Regex เพื่อจัดการกรณีมีเครื่องหมายจุลภาคใน "" (เช่น "ชื่อสินค้า, รุ่นพิเศษ")
+                // แต่ถ้า CSV เรียบง่ายใช้ split(',') ก็เร็วดี
+                const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                // ลบ quote " ออกจากข้อมูลถ้ามี
+                const cleanRow = row.map(cell => cell ? cell.trim().replace(/^"|"$/g, '') : '');
+
+                let productCode = cleanRow[0];
+
+                // --- LOGIC จัดการ MERGED CELLS ---
+                // ถ้าช่องรหัสสินค้าว่าง แต่ช่องชื่อสินค้ามีข้อมูล หรือมีข้อมูลตัวเลข ให้ถือว่าเป็นรหัสเดียวกับบรรทัดก่อนหน้า
+                if (!productCode && lastProductCode) {
+                    // ตรวจสอบว่าบรรทัดนี้มีข้อมูลจริงๆ ไหม (ป้องกันบรรทัดว่างท้ายไฟล์)
+                    const hasData = Object.values(STOCK_COLUMNS).some(idx => cleanRow[idx] && cleanRow[idx] !== '0');
+                    if (cleanRow[NAME_COLUMN_INDEX] || hasData) {
+                        productCode = lastProductCode;
+                    }
+                }
+
+                if (productCode) {
+                    productCode = productCode.toUpperCase();
+                    lastProductCode = productCode; // จำรหัสไว้ใช้รอบหน้า
+
+                    // ถ้ายังไม่มีรหัสนี้ใน data ให้สร้างใหม่
+                    if (!data[productCode]) {
+                        data[productCode] = {
+                            name: cleanRow[NAME_COLUMN_INDEX] || 'ไม่ระบุชื่อ',
+                            stocks: {}
+                        };
+                        // Initialize stocks เป็น 0
+                        for (const size of Object.keys(STOCK_COLUMNS)) {
+                            data[productCode].stocks[size] = 0;
+                        }
+                    }
+
+                    // รวมยอด (Accumulate) เข้าไปในรหัสนั้นๆ
+                    for (const [size, colIndex] of Object.entries(STOCK_COLUMNS)) {
+                        if (cleanRow.length > colIndex) {
+                            // ลบเครื่องหมายลูกน้ำออกก่อนแปลงเป็นตัวเลข (เช่น "1,200" -> 1200)
+                            const numStr = cleanRow[colIndex].replace(/,/g, '');
+                            const val = parseInt(numStr, 10) || 0;
+                            data[productCode].stocks[size] += val;
+                        }
+                    }
+                    
+                    // อัปเดตชื่อสินค้าจากบรรทัดแรกที่เจอ (ปกติบรรทัดแรกชื่อจะสมบูรณ์สุด)
+                    // หรือจะเก็บชื่อจากทุกบรรทัดมาต่อกันก็ได้ถ้าต้องการ
+                }
+            }
+            return data;
+        }
+
+        async function fetchStockData(productCode) {
+            // Force Reload ถ้า Cache ว่างเปล่า
+            if (productDataCache === null) {
+                console.log("Fetching data...");
+                try {
+                    const response = await fetch(CSV_URL);
+                    if (!response.ok) throw new Error('Network response error');
+                    const csvText = await response.text();
+                    productDataCache = parseCSV(csvText);
+                    
+                    const now = new Date();
+                    document.getElementById('lastUpdateDisplay').textContent = now.toLocaleTimeString('th-TH');
+                    
+                } catch (error) {
+                    console.error("Error:", error);
+                    return { success: false, message: 'ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบอินเทอร์เน็ต' };
+                }
+            }
+
+            const key = productCode.toUpperCase().trim();
+            const result = productDataCache[key];
+
+            if (result) {
+                return { success: true, product: result };
+            } else {
+                return { success: false, message: `ไม่พบรหัสสินค้า: ${productCode}` };
+            }
+        }
+
+        async function searchProduct() {
+            const input = document.getElementById('productCodeInput');
+            const code = input.value.trim();
+            
+            if (!code) return;
+
+            // UI Elements
+            const loader = document.getElementById('loadingIndicator');
+            const card = document.getElementById('productCard');
+            const errorMsg = document.getElementById('errorMessage');
+            const initMsg = document.getElementById('initialMessage');
+            const btn = document.getElementById('searchButton');
+
+            // Set UI State
+            loader.classList.remove('hidden');
+            card.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            initMsg.classList.add('hidden');
+            btn.disabled = true;
+
+            // Simulate slight delay for UX (optional) or just fetch
+            const result = await fetchStockData(code);
+
+            loader.classList.add('hidden');
+            btn.disabled = false;
+
+            if (result.success) {
+                const p = result.product;
+                document.getElementById('productCodeDisplay').textContent = code.toUpperCase();
+                document.getElementById('productName').textContent = p.name;
+                
+                // Render Table
+                const thead = document.querySelector('#stockTable thead');
+                const tbody = document.querySelector('#stockTable tbody');
+                const lowStockMsg = document.getElementById('lowStockMessage');
+                
+                let headHTML = '<tr>';
+                let bodyHTML = '<tr>';
+                let hasLowStock = false;
+
+                for (const size of Object.keys(STOCK_COLUMNS)) {
+                    headHTML += `<th scope="col" class="px-4 py-3 bg-gray-50 border-b">${size}</th>`;
+                    
+                    const qty = p.stocks[size];
+                    let colorClass = 'text-gray-900 font-bold';
+                    let bgClass = '';
+                    
+                    if (qty === 0) {
+                        colorClass = 'text-gray-300';
+                    } else if (qty < 20) {
+                        colorClass = 'text-red-600 font-extrabold';
+                        bgClass = 'bg-red-50';
+                        hasLowStock = true;
+                    } else {
+                        colorClass = 'text-green-700 font-bold';
+                    }
+
+                    bodyHTML += `<td class="px-4 py-3 border-b ${bgClass}">
+                        <span class="${colorClass} text-lg block">${qty.toLocaleString()}</span>
+                    </td>`;
+                }
+                
+                headHTML += '</tr>';
+                bodyHTML += '</tr>';
+                
+                thead.innerHTML = headHTML;
+                tbody.innerHTML = bodyHTML;
+
+                if (hasLowStock) lowStockMsg.classList.remove('hidden');
+                else lowStockMsg.classList.add('hidden');
+
+                card.classList.remove('hidden');
+            } else {
+                errorMsg.classList.remove('hidden');
+                document.getElementById('errorText').textContent = result.message;
+            }
+        }
+
+        // Help Modal Logic
+        function toggleHelpModal(show) {
+            const modal = document.getElementById('helpModal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('helpModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                toggleHelpModal(false);
+            }
+        });
+    </script>
+</body>
+</html>
