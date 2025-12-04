@@ -164,8 +164,9 @@
                 </div>
             </div>
 
-            <p class="mt-8 text-xs text-gray-400 text-center">
-                Last Updated: <span id="lastUpdateDisplay">-</span>
+            <!-- ปรับปรุงส่วนแสดงเวลาอัพเดท -->
+            <p class="mt-8 text-lg text-red-600 font-bold text-center">
+                อัพเดทข้อมูล : <span id="lastUpdateDisplay">-</span>
             </p>
         </div>
 
@@ -309,8 +310,13 @@
                     const csvText = await response.text();
                     productDataCache = parseCSV(csvText);
                     
+                    // ปรับการแสดงผลเวลาเป็นภาษาไทยแบบเต็ม
                     const now = new Date();
-                    document.getElementById('lastUpdateDisplay').textContent = now.toLocaleTimeString('th-TH');
+                    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                    const datePart = now.toLocaleDateString('th-TH', options);
+                    const timePart = now.toLocaleTimeString('th-TH');
+                    
+                    document.getElementById('lastUpdateDisplay').textContent = `${datePart} เวลา ${timePart}`;
                     
                 } catch (error) {
                     console.error("Error:", error);
@@ -380,15 +386,33 @@
                     const qty = p.stocks[size];
                     let colorClass = 'text-gray-900 font-bold';
                     let bgClass = '';
+                    let iconHTML = '';
                     
                     if (qty === 0) {
-                        colorClass = 'text-gray-300';
-                    } else if (qty < 20) {
-                        colorClass = 'text-red-600 font-extrabold';
-                        bgClass = 'bg-red-50'; // ไฮไลท์ทั้งช่องจำนวน
-                        hasLowStock = true;
+                        // กรณีสินค้าหมด (0)
+                        colorClass = 'text-gray-400';
+                        // ไอคอน X สีแดง
+                        iconHTML = `
+                            <svg class="w-6 h-6 text-red-500 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        `;
                     } else {
-                        colorClass = 'text-green-700 font-bold';
+                        // กรณีมีสินค้า (> 0)
+                        // ไอคอนถูก สีเขียว
+                        iconHTML = `
+                            <svg class="w-6 h-6 text-green-500 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        `;
+
+                        if (qty < 20) {
+                            colorClass = 'text-red-600 font-extrabold';
+                            bgClass = 'bg-red-50'; // ไฮไลท์พื้นหลังสีแดงอ่อนเตือน
+                            hasLowStock = true;
+                        } else {
+                            colorClass = 'text-green-700 font-bold';
+                        }
                     }
 
                     // สร้างแถว (Row) สำหรับแต่ละขนาด
@@ -398,7 +422,10 @@
                                 ${size}
                             </td>
                             <td class="px-6 py-4 text-right border-b ${bgClass}">
-                                <span class="${colorClass} text-xl block">${qty.toLocaleString()}</span>
+                                <div class="flex items-center justify-end">
+                                    <span class="${colorClass} text-xl">${qty.toLocaleString()}</span>
+                                    ${iconHTML}
+                                </div>
                             </td>
                         </tr>
                     `;
