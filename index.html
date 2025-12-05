@@ -256,9 +256,9 @@
         </div>
     </main>
 
-    <!-- Help Modal -->
+    <!-- Help Modal (Updated Content) -->
     <div id="helpModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full p-6 relative animate-fade-in-up">
+        <div class="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-6 relative animate-fade-in-up max-h-[90vh] overflow-y-auto">
             <button onclick="toggleHelpModal(false)" class="absolute top-4 right-4 bg-slate-50 p-2 rounded-full hover:bg-slate-100 text-slate-400">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
@@ -271,19 +271,56 @@
                 <h3 class="text-xl font-bold text-slate-800">วิธีใช้งาน</h3>
             </div>
             
-            <div class="space-y-3 text-sm text-slate-600">
-                <p><span class="font-bold text-sunny-red">1.</span> กดปุ่มเมนูมุมซ้ายบนเพื่อเลือกสินค้า (มู่ลี่ไม้ / ฉาก PVC)</p>
-                <p><span class="font-bold text-sunny-red">2.</span> กรอกรหัสสินค้า แล้วกดปุ่มค้นหา</p>
+            <div class="space-y-4 text-sm text-slate-600">
+                <!-- ส่วนวิธีใช้เดิม -->
+                <ul class="space-y-2 list-disc pl-4 marker:text-sunny-red">
+                    <li>กรอกรหัสที่ต้องการเช็คในช่องว่าง</li>
+                    <li>โดยให้พิมพ์ตัวอักษรภาษาอังกฤษก่อน และตามด้วยเครื่องหมาย <strong>-</strong> และตามด้วยตัวเลข<br>
+                        <span class="text-slate-400 text-xs">เช่น B35-30 , SA-15 , FW-510 , FW-356</span>
+                    </li>
+                    <li>กดปุ่ม <strong>ค้นหา</strong> ระบบจะแสดงข้อมูลสต็อกคงเหลือขึ้นมาทันที</li>
+                </ul>
+
+                <!-- ส่วนข้อแนะนำเดิม -->
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-xs md:text-sm">
+                    <p class="mb-2">
+                        <span class="font-bold text-blue-600">•</span> ตัวเลข 4ft (1.22 ม.), 4.5ft (1.37 ม.), 5ft (1.52 ม.) หมายถึงความกว้างของใบมู่ลี่
+                    </p>
+                    <p class="font-medium text-blue-800">
+                        กรณีที่เหลือ ให้ดูที่ 8FT ลงมาเรื่อยๆ
+                    </p>
+                    <p class="mt-2 text-slate-500 italic">
+                        "เช่น ขนาดมู่ลี่ที่ลูกค้าต้องการสั่ง คือ กว้าง 168x200 แต่ขนาด 5.5FT หมด แต่ขนาด 8FT มี <strong>ลูกค้าก็สามารถสั่งได้ (ไม่ได้คิดเงินเพิ่ม) เราจะนำใบ 8FT มาตัดให้ลูกค้าเอง</strong>"
+                    </p>
+                </div>
                 
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
-                    <p class="text-xs font-medium mb-2">สัญลักษณ์สถานะ:</p>
-                    <div class="flex items-center gap-2 mb-1">
-                        <div class="w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>
-                        <span>มีสินค้าพร้อมส่ง</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-5 h-5 bg-red-100 text-red-400 rounded-full flex items-center justify-center"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>
-                        <span>สินค้าหมด (0)</span>
+                <!-- ส่วนสถานะเพิ่มเติม (ใหม่) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-4">
+                    <p class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">สัญลักษณ์สถานะ:</p>
+                    <div class="space-y-3">
+                        <!-- สถานะ 1 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <span class="font-medium text-slate-700">มีสินค้าพร้อมส่ง</span>
+                        </div>
+                        <!-- สถานะ 2 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 bg-red-100 text-red-400 rounded-full flex items-center justify-center shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </div>
+                            <span class="font-medium text-slate-700">สินค้าหมด (0)</span>
+                        </div>
+                        <!-- สถานะ 3 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shrink-0">
+                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </div>
+                            <div class="bg-red-50 text-red-600 rounded-lg px-2 py-1 text-xs font-bold border border-red-100">
+                                สินค้าใกล้หมด (ต่ำกว่า 20 ชิ้น)
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
