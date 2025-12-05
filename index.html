@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบเช็คสต็อกมู่ลี่ไม้ - SUNNY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        display: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'sunny-red': '#E63946',
+                        'sunny-bg': '#F1FAEE',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* CSS สำหรับ Loading */
+        .loader {
+            border-top-color: #E63946;
+            -webkit-animation: spin 1s ease-in-out infinite;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Pattern พื้นหลังมู่ลี่จางๆ */
+        .wooden-pattern {
+            background-color: #ffffff;
+            background-image: repeating-linear-gradient(
+                180deg,
+                rgba(210, 180, 140, 0.05) 0px,
+                rgba(210, 180, 140, 0.05) 15px,
+                rgba(0, 0, 0, 0.02) 16px,
+                transparent 16px,
+                transparent 24px
+            );
+        }
+
+        /* Animation การ์ดเด้ง */
+        .bento-card {
+            transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.2s ease;
+        }
+        .bento-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.4s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* สไตล์ Scrollbar ซ่อนไว้เพื่อความสวยงาม */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-slate-800 p-4 md:p-8 flex justify-center items-start">
+
+    <!-- Main Grid Container (Bento Layout) -->
+    <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
+
+        <!-- Box 1: Header & Logo (ใหญ่สุด) -->
+        <div class="col-span-1 md:col-span-8 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 wooden-pattern relative overflow-hidden flex flex-col justify-center items-start min-h-[180px]">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"></div>
+            
+            <h2 class="relative z-10 text-sm md:text-base font-semibold text-slate-500 tracking-wide uppercase mb-1 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-slate-100 inline-block">
+                ระบบเช็คสต็อกมู่ลี่ไม้
+            </h2>
+            <h1 class="relative z-10 text-5xl md:text-7xl font-black text-sunny-red italic tracking-tighter" style="font-family: 'Inter', sans-serif;">
+                SUNNY
+            </h1>
+            <p class="relative z-10 text-slate-400 text-sm mt-2 font-light">
+                Professional Wood Blinds Stock Checker
+            </p>
+        </div>
+
+        <!-- Box 2: Time & Update Info (ขวาบน) -->
+        <div class="col-span-1 md:col-span-4 bg-slate-900 text-white rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute bottom-0 right-0 w-24 h-24 bg-blue-500 rounded-full blur-3xl opacity-20"></div>
+            <div>
+                <p class="text-slate-400 text-xs uppercase font-bold tracking-wider mb-2">Last Updated</p>
+                <div id="lastUpdateDisplay" class="text-xl md:text-2xl font-semibold leading-tight text-white">
+                    รอการค้นหา...
+                </div>
+            </div>
+            <div class="mt-4 flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                <span class="text-xs text-slate-300">Live Status</span>
+            </div>
+        </div>
+
+        <!-- Box 3: Search Bar (ยาวเต็มแถว) -->
+        <div class="col-span-1 md:col-span-12 bg-white rounded-3xl p-2 shadow-lg shadow-slate-200/50 border border-slate-100 flex items-center gap-2 sticky top-2 z-30 backdrop-blur-xl bg-white/90 transition-all duration-300 focus-within:ring-4 focus-within:ring-red-100">
+            <div class="pl-4 text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <input 
+                type="text" 
+                id="productCodeInput"
+                class="flex-grow bg-transparent border-none outline-none text-lg md:text-xl font-medium text-slate-800 placeholder-slate-400 h-14"
+                placeholder="ค้นหารหัสสินค้า (เช่น B35-34)..."
+                onkeypress="if(event.key === 'Enter') searchProduct()"
+            >
+            <button 
+                onclick="toggleHelpModal(true)"
+                class="hidden md:flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-5 py-3 rounded-2xl transition-colors font-semibold text-sm mr-2"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                วิธีใช้
+            </button>
+            <button 
+                id="searchButton"
+                onclick="searchProduct()"
+                class="bg-sunny-red hover:bg-red-700 text-white px-8 py-3 rounded-2xl font-bold text-lg shadow-md shadow-red-200 transition-all active:scale-95"
+            >
+                ค้นหา
+            </button>
+        </div>
+
+        <!-- Mobile Help Button (Visible only on mobile) -->
+        <div class="col-span-1 md:hidden">
+            <button 
+                onclick="toggleHelpModal(true)"
+                class="w-full bg-white border border-slate-200 text-slate-600 p-3 rounded-2xl flex items-center justify-center gap-2 shadow-sm font-semibold"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ดูวิธีใช้งาน
+            </button>
+        </div>
+
+        <!-- Result Section (Dynamic Content) -->
+        <div id="resultContainer" class="col-span-1 md:col-span-12 min-h-[200px] transition-all">
+            
+            <!-- State: Empty / Initial -->
+            <div id="initialMessage" class="flex flex-col items-center justify-center h-64 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <p>กรอกรหัสสินค้าเพื่อเริ่มต้นเช็คสต็อก</p>
+            </div>
+
+            <!-- State: Loading -->
+            <div id="loadingIndicator" class="hidden flex flex-col items-center justify-center h-64 bg-white rounded-3xl shadow-sm">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-10 w-10 mb-4"></div>
+                <p class="text-slate-500 font-medium animate-pulse">กำลังเชื่อมต่อฐานข้อมูล...</p>
+            </div>
+
+            <!-- State: Result Found -->
+            <div id="productCard" class="hidden animate-fade-in-up">
+                
+                <!-- Product Header Info -->
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <div class="flex-1 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Product Code</span>
+                        <h2 id="productCodeDisplay" class="text-4xl font-black text-slate-800"></h2>
+                    </div>
+                    <div class="flex-[2] bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Product Name</span>
+                        <h3 id="productName" class="text-2xl md:text-3xl font-bold text-slate-700"></h3>
+                    </div>
+                </div>
+
+                <!-- Stock Grid (Mini Bento Boxes) -->
+                <h4 class="text-lg font-bold text-slate-700 mb-4 ml-2 flex items-center gap-2">
+                    <span>📦 สต็อกสินค้า</span>
+                    <span class="text-xs font-normal bg-slate-200 px-2 py-0.5 rounded-md text-slate-600">หน่วย: ใบ</span>
+                </h4>
+                
+                <div id="stockGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Cards will be injected here via JS -->
+                </div>
+
+                <!-- Low Stock Warning -->
+                <div id="lowStockMessage" class="hidden mt-6 bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center justify-center gap-3 text-red-700">
+                    <div class="bg-red-100 p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <span class="font-semibold">มีสินค้าบางรายการใกล้หมด (ต่ำกว่า 20 ชิ้น)</span>
+                </div>
+
+            </div>
+
+            <!-- State: Error -->
+            <div id="errorMessage" class="hidden h-64 bg-red-50 border border-red-100 rounded-3xl flex flex-col items-center justify-center text-red-600 p-6 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="text-xl font-bold mb-2">ไม่พบข้อมูล</h3>
+                <p id="errorText" class="text-red-500"></p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Help Modal (Backdrop Blur Style) -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity opacity-0" style="transition: opacity 0.3s ease;">
+        <div class="bg-white rounded-[2rem] shadow-2xl max-w-lg w-full p-8 relative transform scale-95 transition-transform duration-300" id="helpModalContent">
+            <button onclick="toggleHelpModal(false)" class="absolute top-6 right-6 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-blue-100 p-3 rounded-2xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800">วิธีใช้งาน</h3>
+            </div>
+            
+            <div class="space-y-4 text-slate-600">
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <p class="font-medium text-slate-800 mb-1">1. ค้นหารหัสสินค้า</p>
+                    <p class="text-sm">พิมพ์รหัส เช่น <span class="bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-mono">B35-34</span> แล้วกดค้นหา</p>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <p class="font-medium text-slate-800 mb-1">2. ดูสถานะสินค้า</p>
+                    <ul class="text-sm space-y-2 mt-2">
+                        <li class="flex items-center gap-2">
+                            <div class="w-5 h-5 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs">✓</div>
+                            <span>มีสินค้า (สั่งได้ทันที)</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <div class="w-5 h-5 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-xs">✕</div>
+                            <span>สินค้าหมด (0)</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100 text-sm leading-relaxed">
+                    <strong class="text-blue-700 block mb-2">💡 Tips: การเลือกขนาด</strong>
+                    ถ้าขนาดที่ต้องการ (เช่น 5.5ft) หมด <br>
+                    ลูกค้าสามารถสั่งขนาดที่ใหญ่กว่า (เช่น 8ft) แทนได้ 
+                    <span class="block mt-2 font-medium text-blue-800">"เราจะนำใบ 8ft มาตัดให้ลูกค้าเอง โดยไม่คิดเงินเพิ่ม"</span>
+                </div>
+            </div>
+
+            <button onclick="toggleHelpModal(false)" class="mt-8 w-full bg-slate-900 text-white py-3.5 rounded-2xl hover:bg-slate-800 font-bold transition-transform active:scale-95 shadow-lg shadow-slate-200">
+                เข้าใจแล้ว
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv';
+        let productDataCache = null; 
+
+        const STOCK_COLUMNS = {
+            '4ft': { col: 4, meter: '1.22 ม.' },
+            '4.5ft': { col: 6, meter: '1.37 ม.' },
+            '5ft': { col: 8, meter: '1.52 ม.' },
+            '5.5ft': { col: 10, meter: '1.68 ม.' },
+            '6ft': { col: 12, meter: '1.83 ม.' },
+            '6.5ft': { col: 14, meter: '1.98 ม.' },
+            '7ft': { col: 16, meter: '2.13 ม.' },
+            '8ft': { col: 18, meter: '2.44 ม.' }
+        };
+        const NAME_COLUMN_INDEX = 1;
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const data = {};
+            let lastProductCode = null;
+
+            for (let i = 2; i < lines.length; i++) {
+                const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const cleanRow = row.map(cell => cell ? cell.trim().replace(/^"|"$/g, '') : '');
+                let productCode = cleanRow[0];
+
+                if (!productCode && lastProductCode) {
+                    const hasData = Object.values(STOCK_COLUMNS).some(obj => cleanRow[obj.col] && cleanRow[obj.col] !== '0');
+                    if (cleanRow[NAME_COLUMN_INDEX] || hasData) {
+                        productCode = lastProductCode;
+                    }
+                }
+
+                if (productCode) {
+                    productCode = productCode.toUpperCase();
+                    lastProductCode = productCode;
+
+                    if (!data[productCode]) {
+                        data[productCode] = {
+                            name: cleanRow[NAME_COLUMN_INDEX] || 'ไม่ระบุชื่อ',
+                            stocks: {}
+                        };
+                        for (const key of Object.keys(STOCK_COLUMNS)) {
+                            data[productCode].stocks[key] = 0;
+                        }
+                    }
+
+                    for (const [key, obj] of Object.entries(STOCK_COLUMNS)) {
+                        if (cleanRow.length > obj.col) {
+                            const numStr = cleanRow[obj.col].replace(/,/g, '');
+                            const val = parseInt(numStr, 10) || 0;
+                            data[productCode].stocks[key] += val;
+                        }
+                    }
+                }
+            }
+            return data;
+        }
+
+        async function fetchStockData(productCode) {
+            if (productDataCache === null) {
+                try {
+                    const response = await fetch(CSV_URL);
+                    if (!response.ok) throw new Error('Network error');
+                    const csvText = await response.text();
+                    productDataCache = parseCSV(csvText);
+                    
+                    const now = new Date();
+                    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                    document.getElementById('lastUpdateDisplay').textContent = now.toLocaleDateString('th-TH', options) + " น.";
+                } catch (error) {
+                    console.error("Error:", error);
+                    return { success: false, message: 'ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบอินเทอร์เน็ต' };
+                }
+            }
+            const key = productCode.toUpperCase().trim();
+            const result = productDataCache[key];
+            return result ? { success: true, product: result } : { success: false, message: `ไม่พบรหัสสินค้า: ${productCode}` };
+        }
+
+        async function searchProduct() {
+            const input = document.getElementById('productCodeInput');
+            const code = input.value.trim();
+            if (!code) return;
+
+            const loader = document.getElementById('loadingIndicator');
+            const card = document.getElementById('productCard');
+            const errorMsg = document.getElementById('errorMessage');
+            const initMsg = document.getElementById('initialMessage');
+            const btn = document.getElementById('searchButton');
+            const grid = document.getElementById('stockGrid');
+            const lowStockMsg = document.getElementById('lowStockMessage');
+
+            loader.classList.remove('hidden');
+            card.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            initMsg.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loader w-5 h-5 border-2 border-white border-t-transparent rounded-full block"></span>';
+
+            const result = await fetchStockData(code);
+
+            btn.disabled = false;
+            btn.innerText = 'ค้นหา';
+            loader.classList.add('hidden');
+
+            if (result.success) {
+                const p = result.product;
+                document.getElementById('productCodeDisplay').textContent = code.toUpperCase();
+                document.getElementById('productName').textContent = p.name;
+                
+                // --- Generate Bento Cards for each stock size ---
+                let gridHTML = '';
+                let hasLowStock = false;
+
+                for (const [key, obj] of Object.entries(STOCK_COLUMNS)) {
+                    const qty = p.stocks[key];
+                    let cardClass = "bg-white border-slate-100";
+                    let textClass = "text-slate-800";
+                    let icon = "";
+                    let statusColor = "";
+
+                    if (qty === 0) {
+                        cardClass = "bg-slate-50 border-slate-100 opacity-60";
+                        textClass = "text-slate-400";
+                        statusColor = "bg-red-100 text-red-500";
+                        icon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                    } else {
+                        icon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                        
+                        if (qty < 20) {
+                            hasLowStock = true;
+                            cardClass = "bg-white border-red-200 shadow-red-100 ring-1 ring-red-100";
+                            textClass = "text-red-600";
+                            statusColor = "bg-red-500 text-white";
+                        } else {
+                            cardClass = "bg-white border-slate-100";
+                            textClass = "text-slate-800";
+                            statusColor = "bg-green-500 text-white";
+                        }
+                    }
+
+                    // Create the Mini Bento Card
+                    gridHTML += `
+                    <div class="bento-card relative rounded-2xl p-4 border flex flex-col justify-between h-32 ${cardClass} shadow-sm group">
+                        <div class="flex justify-between items-start">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-lg md:text-xl text-slate-700">${key}</span>
+                                <span class="text-[10px] text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded-md self-start mt-1">${obj.meter}</span>
+                            </div>
+                            <div class="rounded-full p-1.5 ${statusColor} shadow-sm">
+                                ${icon}
+                            </div>
+                        </div>
+                        <div class="self-end text-right">
+                            <span class="block text-3xl md:text-4xl font-black ${textClass} tracking-tight leading-none">${qty.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    `;
+                }
+
+                grid.innerHTML = gridHTML;
+                
+                if (hasLowStock) lowStockMsg.classList.remove('hidden');
+                else lowStockMsg.classList.add('hidden');
+                
+                // Trigger animation by removing and adding class
+                card.classList.remove('hidden');
+                void card.offsetWidth; // trigger reflow
+                card.classList.add('animate-fade-in-up');
+
+            } else {
+                errorMsg.classList.remove('hidden');
+                document.getElementById('errorText').textContent = result.message;
+            }
+        }
+
+        // Modal Logic with Animation
+        function toggleHelpModal(show) {
+            const modal = document.getElementById('helpModal');
+            const content = document.getElementById('helpModalContent');
+            
+            if (show) {
+                modal.classList.remove('hidden');
+                // Allow browser to render 'hidden' removal first
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                    content.classList.add('scale-100');
+                }, 10);
+            } else {
+                modal.classList.add('opacity-0');
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+        document.getElementById('helpModal').addEventListener('click', function(e) {
+            if (e.target === this) toggleHelpModal(false);
+        });
+    </script>
+</body>
+</html>
