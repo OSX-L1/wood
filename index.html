@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบเช็คสต็อก - SUNNY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'Inter', 'sans-serif'],
+                        display: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'sunny-red': '#E63946',
+                        'sunny-dark': '#1D3557',
+                        'sunny-bg': '#F1FAEE',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* CSS สำหรับ Loading */
+        .loader {
+            border-top-color: #E63946;
+            -webkit-animation: spin 1s ease-in-out infinite;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .wooden-pattern {
+            background-color: #ffffff;
+            background-image: repeating-linear-gradient(180deg, rgba(210, 180, 140, 0.05) 0px, rgba(210, 180, 140, 0.05) 15px, rgba(0, 0, 0, 0.02) 16px, transparent 16px, transparent 24px);
+        }
+
+        .bento-card {
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .bento-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.4s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Sidebar Active State */
+        .menu-item.active {
+            background-color: #FEF2F2;
+            color: #E63946;
+            border-right: 4px solid #E63946;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-slate-800 flex overflow-hidden">
+
+    <!-- Mobile Menu Button -->
+    <button onclick="toggleSidebar()" class="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-md text-slate-600">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-xl transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out border-r border-slate-100 flex flex-col">
+        <div class="p-6 border-b border-slate-100 flex items-center gap-3">
+             <div class="w-10 h-10 bg-sunny-red rounded-lg flex items-center justify-center text-white font-black italic text-xl shadow-red-200 shadow-lg">S</div>
+             <div>
+                 <h1 class="font-black text-xl text-sunny-red italic tracking-tighter">SUNNY</h1>
+                 <p class="text-[10px] text-slate-400 uppercase tracking-widest">Stock System</p>
+             </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <div class="px-4 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">เมนูเช็คสต็อก</div>
+            
+            <a href="#" onclick="switchSystem('WOOD')" id="menu-WOOD" class="menu-item active flex items-center px-6 py-3 text-slate-600 hover:bg-slate-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                มู่ลี่ไม้
+            </a>
+            
+            <a href="#" onclick="switchSystem('PVC')" id="menu-PVC" class="menu-item flex items-center px-6 py-3 text-slate-600 hover:bg-slate-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                </svg>
+                ฉาก PVC <span class="text-[10px] ml-1 text-slate-400">(8.5/10cm)</span>
+            </a>
+
+            <a href="#" onclick="alert('ระบบยังไม่เปิดให้บริการ')" class="menu-item flex items-center px-6 py-3 text-slate-400 hover:bg-slate-50 transition-colors cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                ฉากยูโร
+            </a>
+
+            <a href="#" onclick="alert('ระบบยังไม่เปิดให้บริการ')" class="menu-item flex items-center px-6 py-3 text-slate-400 hover:bg-slate-50 transition-colors cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                ม่านม้วน
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-100">
+            <button onclick="toggleHelpModal(true)" class="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                วิธีใช้งาน
+            </button>
+        </div>
+    </aside>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden glass"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen">
+        <div class="max-w-5xl mx-auto space-y-6">
+
+            <!-- Header Section (Dynamic) -->
+            <div id="headerSection" class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 wooden-pattern relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-red-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"></div>
+                <div class="relative z-10">
+                    <h2 id="systemTitle" class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">ระบบเช็คสต็อกมู่ลี่ไม้</h2>
+                    <h1 class="text-3xl md:text-5xl font-black text-slate-800 tracking-tight">
+                        ตรวจสอบ<span class="text-sunny-red italic" id="productTypeLabel">มู่ลี่ไม้</span>
+                    </h1>
+                    <p class="text-slate-500 mt-2 text-sm flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        Status: Online | Updated: <span id="lastUpdateDisplay" class="font-semibold text-slate-700">...</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="bg-white rounded-2xl p-2 shadow-lg shadow-slate-200/50 border border-slate-100 flex items-center gap-2 sticky top-2 z-20 backdrop-blur-xl bg-white/90">
+                <div class="pl-4 text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input 
+                    type="text" 
+                    id="productCodeInput"
+                    class="flex-grow bg-transparent border-none outline-none text-lg md:text-xl font-medium text-slate-800 placeholder-slate-400 h-14"
+                    placeholder="ค้นหารหัสสินค้า (เช่น B35-34)..."
+                    onkeypress="if(event.key === 'Enter') searchProduct()"
+                >
+                <button 
+                    id="searchButton"
+                    onclick="searchProduct()"
+                    class="bg-sunny-red hover:bg-red-700 text-white px-6 md:px-8 py-3 rounded-xl font-bold text-lg shadow-md shadow-red-200 transition-all active:scale-95 whitespace-nowrap"
+                >
+                    ค้นหา
+                </button>
+            </div>
+
+            <!-- Dynamic Result Container -->
+            <div id="resultContainer" class="min-h-[200px]">
+                
+                <!-- State: Empty -->
+                <div id="initialMessage" class="flex flex-col items-center justify-center h-64 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p>เลือกเมนูและกรอกรหัสสินค้าเพื่อค้นหา</p>
+                </div>
+
+                <!-- State: Loading -->
+                <div id="loadingIndicator" class="hidden flex flex-col items-center justify-center h-64 bg-white rounded-3xl shadow-sm">
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-10 w-10 mb-4"></div>
+                    <p class="text-slate-500 font-medium animate-pulse">กำลังโหลดข้อมูล...</p>
+                </div>
+
+                <!-- State: Result -->
+                <div id="productCard" class="hidden animate-fade-in-up">
+                    <div class="flex flex-col md:flex-row gap-4 mb-6">
+                        <div class="flex-1 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">รหัสสินค้า</span>
+                            <h2 id="productCodeDisplay" class="text-4xl font-black text-slate-800"></h2>
+                        </div>
+                        <div class="flex-[2] bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ชื่อสินค้า</span>
+                            <h3 id="productName" class="text-2xl md:text-3xl font-bold text-slate-700"></h3>
+                        </div>
+                    </div>
+
+                    <div id="stockGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <!-- Grid items injected by JS -->
+                    </div>
+                </div>
+
+                <!-- State: Error -->
+                <div id="errorMessage" class="hidden h-64 bg-red-50 border border-red-100 rounded-3xl flex flex-col items-center justify-center text-red-600 p-6 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <h3 class="text-xl font-bold mb-2">ไม่พบข้อมูล</h3>
+                    <p id="errorText" class="text-red-500"></p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] shadow-2xl max-w-lg w-full p-8 relative">
+            <button onclick="toggleHelpModal(false)" class="absolute top-6 right-6 bg-slate-100 p-2 rounded-full hover:bg-slate-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 class="text-2xl font-bold text-slate-800 mb-4">วิธีใช้งาน</h3>
+            <div class="space-y-4 text-slate-600">
+                <p>1. เลือกประเภทสินค้าจากเมนูด้านซ้าย</p>
+                <p>2. กรอกรหัสสินค้า แล้วกดปุ่มค้นหา</p>
+                <div class="bg-blue-50 p-4 rounded-xl text-sm border border-blue-100">
+                    <strong class="text-blue-700 block mb-1">หมายเหตุ:</strong>
+                    ข้อมูลจะแยกตามประเภทสินค้า หากหาสินค้าไม่เจอ โปรดตรวจสอบว่าเลือกเมนูถูกต้อง
+                </div>
+            </div>
+            <button onclick="toggleHelpModal(false)" class="mt-6 w-full bg-sunny-red text-white py-3 rounded-xl font-bold">เข้าใจแล้ว</button>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION
+        const WOOD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv';
+        
+        // URL for PVC Sheet (Sheet 3) - Updated by user
+        const PVC_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1230787558&single=true&output=csv'; 
+
+        // State
+        let currentSystem = 'WOOD'; // 'WOOD' or 'PVC'
+        let cache = {
+            WOOD: null,
+            PVC: null
+        };
+
+        // UI Helpers
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function toggleHelpModal(show) {
+            document.getElementById('helpModal').classList.toggle('hidden', !show);
+        }
+
+        function switchSystem(system) {
+            currentSystem = system;
+            
+            // Update Menu UI
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`menu-${system}`).classList.add('active');
+            
+            // Update Header
+            const title = system === 'WOOD' ? 'ระบบเช็คสต็อกมู่ลี่ไม้' : 'ระบบเช็คสต็อกฉาก PVC';
+            const label = system === 'WOOD' ? 'มู่ลี่ไม้' : 'ฉาก PVC';
+            const placeholder = system === 'WOOD' ? 'ค้นหารหัสสินค้า (เช่น B35-34)...' : 'ค้นหารหัสสินค้า (เช่น 926, 930)...';
+            
+            document.getElementById('systemTitle').innerText = title;
+            document.getElementById('productTypeLabel').innerText = label;
+            document.getElementById('productCodeInput').placeholder = placeholder;
+            document.getElementById('productCodeInput').value = '';
+            
+            // Reset Results
+            document.getElementById('productCard').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('initialMessage').classList.remove('hidden');
+            
+            // Close Sidebar on mobile
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+
+        // --- WOOD LOGIC ---
+        const STOCK_COLUMNS_WOOD = {
+            '4ft': { col: 4, meter: '1.22 ม.' },
+            '4.5ft': { col: 6, meter: '1.37 ม.' },
+            '5ft': { col: 8, meter: '1.52 ม.' },
+            '5.5ft': { col: 10, meter: '1.68 ม.' },
+            '6ft': { col: 12, meter: '1.83 ม.' },
+            '6.5ft': { col: 14, meter: '1.98 ม.' },
+            '7ft': { col: 16, meter: '2.13 ม.' },
+            '8ft': { col: 18, meter: '2.44 ม.' }
+        };
+
+        function parseWoodCSV(text) {
+            const lines = text.trim().split('\n');
+            const data = {};
+            let lastCode = null;
+            
+            for (let i = 2; i < lines.length; i++) {
+                const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const cleanRow = row.map(cell => cell ? cell.trim().replace(/^"|"$/g, '') : '');
+                let code = cleanRow[0];
+
+                if (!code && lastCode) {
+                    const hasData = Object.values(STOCK_COLUMNS_WOOD).some(o => cleanRow[o.col] && cleanRow[o.col] !== '0');
+                    if (cleanRow[1] || hasData) code = lastCode;
+                }
+
+                if (code) {
+                    code = code.toUpperCase();
+                    lastCode = code;
+                    if (!data[code]) {
+                        data[code] = { name: cleanRow[1] || 'ไม่ระบุชื่อ', stocks: {} };
+                        Object.keys(STOCK_COLUMNS_WOOD).forEach(k => data[code].stocks[k] = 0);
+                    }
+                    for (const [k, o] of Object.entries(STOCK_COLUMNS_WOOD)) {
+                        if (cleanRow.length > o.col) {
+                            const val = parseInt(cleanRow[o.col].replace(/,/g, ''), 10) || 0;
+                            data[code].stocks[k] += val;
+                        }
+                    }
+                }
+            }
+            return data;
+        }
+
+        // --- PVC LOGIC ---
+        // Based on structure: Col A=Code, B=Name, C onwards=Heights (Row 2 headers)
+        function parsePvcCSV(text) {
+            const lines = text.trim().split('\n');
+            const data = {};
+            
+            // Parse Headers (Row 2 contains heights like 200, 220, ...)
+            // Index 0=A, 1=B, 2=C...
+            const headerRow = lines[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
+            const heightMap = []; // Stores { index: 2, label: '200' }
+            
+            for(let i = 2; i < headerRow.length; i++) {
+                if(headerRow[i] && !isNaN(parseInt(headerRow[i]))) {
+                    heightMap.push({ index: i, label: headerRow[i] });
+                }
+            }
+
+            // Parse Data (From Row 3)
+            for (let i = 2; i < lines.length; i++) {
+                const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const cleanRow = row.map(cell => cell ? cell.trim().replace(/^"|"$/g, '') : '');
+                
+                let code = cleanRow[0];
+                if (code) {
+                    code = code.toUpperCase();
+                    if (!data[code]) {
+                        data[code] = { name: cleanRow[1] || 'ไม่ระบุชื่อ', stocks: {} };
+                    }
+                    
+                    heightMap.forEach(h => {
+                        if(cleanRow.length > h.index) {
+                            const val = parseInt(cleanRow[h.index].replace(/,/g, ''), 10) || 0;
+                            // Accumulate if duplicate codes exist
+                            data[code].stocks[h.label] = (data[code].stocks[h.label] || 0) + val;
+                        }
+                    });
+                }
+            }
+            return data;
+        }
+
+        // --- MAIN FUNCTIONS ---
+        async function fetchData() {
+            if (cache[currentSystem]) return cache[currentSystem];
+
+            const url = currentSystem === 'WOOD' ? WOOD_CSV_URL : PVC_CSV_URL;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Network Error');
+                const text = await response.text();
+                
+                const parsedData = currentSystem === 'WOOD' ? parseWoodCSV(text) : parsePvcCSV(text);
+                cache[currentSystem] = parsedData;
+                
+                // Update Time
+                const now = new Date();
+                document.getElementById('lastUpdateDisplay').innerText = now.toLocaleDateString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+                
+                return parsedData;
+            } catch (e) {
+                console.error(e);
+                throw e;
+            }
+        }
+
+        async function searchProduct() {
+            const input = document.getElementById('productCodeInput');
+            const code = input.value.trim().toUpperCase();
+            if (!code) return;
+
+            // UI Loading
+            const els = ['loadingIndicator', 'productCard', 'errorMessage', 'initialMessage'];
+            els.forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+            document.getElementById('searchButton').disabled = true;
+            document.getElementById('searchButton').innerText = '...';
+
+            try {
+                const data = await fetchData();
+                const result = data[code];
+
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('searchButton').disabled = false;
+                document.getElementById('searchButton').innerText = 'ค้นหา';
+
+                if (result) {
+                    document.getElementById('productCodeDisplay').innerText = code;
+                    document.getElementById('productName').innerText = result.name;
+                    
+                    // Render Grid
+                    const grid = document.getElementById('stockGrid');
+                    grid.innerHTML = '';
+                    
+                    // Helper to render card
+                    const createCard = (label, subLabel, qty) => {
+                        const isZero = qty === 0;
+                        const isLow = qty > 0 && qty < 20;
+                        
+                        let bg = isZero ? 'bg-slate-50 opacity-60' : 'bg-white';
+                        let border = isLow ? 'border-red-200 ring-1 ring-red-100' : 'border-slate-100';
+                        let textColor = isLow ? 'text-red-600' : (isZero ? 'text-slate-400' : 'text-slate-800');
+                        let iconColor = isLow ? 'bg-red-500 text-white' : (isZero ? 'bg-red-100 text-red-400' : 'bg-green-500 text-white');
+                        let iconPath = isZero ? 'M6 18L18 6M6 6l12 12' : 'M5 13l4 4L19 7';
+
+                        return `
+                        <div class="bento-card relative rounded-2xl p-4 border flex flex-col justify-between h-32 ${bg} ${border} shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="font-bold text-lg text-slate-700">${label}</span>
+                                    ${subLabel ? `<span class="block text-[10px] text-slate-400 bg-slate-100 px-1.5 rounded w-fit mt-1">${subLabel}</span>` : ''}
+                                </div>
+                                <div class="rounded-full p-1.5 ${iconColor} shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path></svg>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-3xl font-black ${textColor}">${qty.toLocaleString()}</span>
+                            </div>
+                        </div>`;
+                    };
+
+                    if (currentSystem === 'WOOD') {
+                        Object.keys(STOCK_COLUMNS_WOOD).forEach(k => {
+                            grid.innerHTML += createCard(k, STOCK_COLUMNS_WOOD[k].meter, result.stocks[k]);
+                        });
+                    } else {
+                        // PVC: Sort keys numerically (200, 220...)
+                        const sortedKeys = Object.keys(result.stocks).sort((a,b) => parseInt(a) - parseInt(b));
+                        sortedKeys.forEach(k => {
+                            grid.innerHTML += createCard(`สูง ${k}`, 'ซม.', result.stocks[k]);
+                        });
+                    }
+
+                    document.getElementById('productCard').classList.remove('hidden');
+                } else {
+                    document.getElementById('errorMessage').classList.remove('hidden');
+                    document.getElementById('errorText').innerText = `ไม่พบรหัสสินค้า: ${code} ในระบบ ${currentSystem === 'WOOD' ? 'มู่ลี่ไม้' : 'ฉาก PVC'}`;
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('searchButton').disabled = false;
+                document.getElementById('searchButton').innerText = 'ค้นหา';
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('errorText').innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+            }
+        }
+    </script>
+</body>
+</html>
