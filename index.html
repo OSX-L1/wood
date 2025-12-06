@@ -119,6 +119,15 @@
                 </div>
             </a>
 
+            <a href="#" onclick="switchSystem('ROLLER')" id="menu-ROLLER" class="menu-item flex items-center px-6 py-4 text-slate-600 hover:bg-slate-50 transition-colors">
+                <div class="w-8 flex justify-center mr-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </div>
+                <span class="font-medium">ม่านม้วน</span>
+            </a>
+
             <a href="#" onclick="alert('ระบบยังไม่เปิดให้บริการ')" class="menu-item flex items-center px-6 py-4 text-slate-400 hover:bg-slate-50 transition-colors cursor-not-allowed grayscale opacity-60">
                 <div class="w-8 flex justify-center mr-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,15 +135,6 @@
                     </svg>
                 </div>
                 <span class="font-medium">ฉากยูโร</span>
-            </a>
-
-            <a href="#" onclick="alert('ระบบยังไม่เปิดให้บริการ')" class="menu-item flex items-center px-6 py-4 text-slate-400 hover:bg-slate-50 transition-colors cursor-not-allowed grayscale opacity-60">
-                <div class="w-8 flex justify-center mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                </div>
-                <span class="font-medium">ม่านม้วน</span>
             </a>
         </nav>
 
@@ -331,11 +331,12 @@
     <script>
         // CONFIGURATION
         const WOOD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv';
-        const PVC_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1230787558&single=true&output=csv'; 
+        const PVC_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1230787558&single=true&output=csv';
+        const ROLLER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1019928538&single=true&output=csv';
 
         // State
-        let currentSystem = 'WOOD'; // 'WOOD' or 'PVC'
-        let cache = { WOOD: null, PVC: null };
+        let currentSystem = 'WOOD'; // 'WOOD' or 'PVC' or 'ROLLER'
+        let cache = { WOOD: null, PVC: null, ROLLER: null };
 
         // UI Helpers
         function toggleSidebar() {
@@ -366,9 +367,20 @@
             document.getElementById(`menu-${system}`).classList.add('active');
             
             // Update Header
-            const title = system === 'WOOD' ? 'ระบบเช็คสต็อกมู่ลี่ไม้' : 'ระบบเช็คสต็อกฉาก PVC';
-            const label = system === 'WOOD' ? 'มู่ลี่ไม้' : 'ฉาก PVC';
-            const placeholder = system === 'WOOD' ? 'รหัส เช่น B35-34...' : 'รหัส เช่น 926, 930...';
+            let title, label, placeholder;
+            if (system === 'WOOD') {
+                title = 'ระบบเช็คสต็อกมู่ลี่ไม้';
+                label = 'มู่ลี่ไม้';
+                placeholder = 'รหัส เช่น B35-34...';
+            } else if (system === 'PVC') {
+                title = 'ระบบเช็คสต็อกฉาก PVC';
+                label = 'ฉาก PVC';
+                placeholder = 'รหัส เช่น 926, 930...';
+            } else if (system === 'ROLLER') {
+                title = 'ระบบเช็คสต็อกม่านม้วน';
+                label = 'ม่านม้วน';
+                placeholder = 'รหัส เช่น SZH-0021, A5-0002...';
+            }
             
             document.getElementById('systemTitle').innerText = title;
             document.getElementById('productTypeLabel').innerText = label;
@@ -465,17 +477,52 @@
             return data;
         }
 
+        // --- ROLLER LOGIC ---
+        // Header Row = Row 2 (Index 1). Data starts Row 4 (Index 3).
+        // Col A(0) = Code, B(1) = Name, C(2) = Stock
+        function parseRollerCSV(text) {
+            const lines = text.trim().split('\n');
+            const data = {};
+            
+            for (let i = 3; i < lines.length; i++) {
+                const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const cleanRow = row.map(cell => cell ? cell.trim().replace(/^"|"$/g, '') : '');
+                
+                let code = cleanRow[0];
+                if (code) {
+                    code = code.toUpperCase();
+                    // Accumulate stock if duplicate codes exist
+                    const val = parseInt(cleanRow[2].replace(/,/g, ''), 10) || 0;
+                    
+                    if (!data[code]) {
+                        data[code] = { name: cleanRow[1] || 'ไม่ระบุชื่อ', stocks: { 'คงเหลือ': val } };
+                    } else {
+                        data[code].stocks['คงเหลือ'] += val;
+                    }
+                }
+            }
+            return data;
+        }
+
         // --- MAIN FUNCTIONS ---
         async function fetchData() {
             if (cache[currentSystem]) return cache[currentSystem];
 
-            const url = currentSystem === 'WOOD' ? WOOD_CSV_URL : PVC_CSV_URL;
+            let url;
+            if (currentSystem === 'WOOD') url = WOOD_CSV_URL;
+            else if (currentSystem === 'PVC') url = PVC_CSV_URL;
+            else if (currentSystem === 'ROLLER') url = ROLLER_CSV_URL;
+
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Network Error');
                 const text = await response.text();
                 
-                const parsedData = currentSystem === 'WOOD' ? parseWoodCSV(text) : parsePvcCSV(text);
+                let parsedData;
+                if (currentSystem === 'WOOD') parsedData = parseWoodCSV(text);
+                else if (currentSystem === 'PVC') parsedData = parsePvcCSV(text);
+                else if (currentSystem === 'ROLLER') parsedData = parseRollerCSV(text);
+                
                 cache[currentSystem] = parsedData;
                 
                 const now = new Date();
@@ -513,6 +560,9 @@
                     
                     const grid = document.getElementById('stockGrid');
                     grid.innerHTML = '';
+                    grid.className = currentSystem === 'ROLLER' 
+                        ? 'grid grid-cols-1 gap-4 pb-4 max-w-sm mx-auto' 
+                        : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 pb-4';
                     
                     const createCard = (label, subLabel, qty) => {
                         const isZero = qty === 0;
@@ -525,18 +575,19 @@
                         let iconPath = isZero ? 'M6 18L18 6M6 6l12 12' : 'M5 13l4 4L19 7';
 
                         return `
-                        <div class="bento-card relative rounded-2xl p-4 border flex flex-col justify-between h-28 ${bg} ${border} shadow-sm group">
-                            <div class="flex justify-between items-start">
+                        <div class="bento-card relative rounded-2xl p-4 border flex flex-col justify-between ${currentSystem === 'ROLLER' ? 'h-40 items-center justify-center text-center' : 'h-28'} ${bg} ${border} shadow-sm group">
+                            <div class="${currentSystem === 'ROLLER' ? 'w-full flex justify-between items-center mb-2' : 'flex justify-between items-start'}">
                                 <div>
                                     <span class="font-bold text-base md:text-lg text-slate-700">${label}</span>
-                                    ${subLabel ? `<span class="block text-[10px] text-slate-400 bg-slate-100 px-1.5 rounded-md w-fit mt-0.5">${subLabel}</span>` : ''}
+                                    ${subLabel ? `<span class="block text-[10px] text-slate-400 bg-slate-100 px-1.5 rounded-md w-fit mt-0.5 ${currentSystem === 'ROLLER' ? 'mx-auto' : ''}">${subLabel}</span>` : ''}
                                 </div>
                                 <div class="rounded-full p-1 ${iconColor} shadow-sm">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="${iconPath}"></path></svg>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <span class="block text-3xl font-black ${textColor} tracking-tight leading-none">${qty.toLocaleString()}</span>
+                            <div class="${currentSystem === 'ROLLER' ? 'text-center mt-2' : 'text-right'}">
+                                <span class="block ${currentSystem === 'ROLLER' ? 'text-5xl' : 'text-3xl'} font-black ${textColor} tracking-tight leading-none">${qty.toLocaleString()}</span>
+                                ${currentSystem === 'ROLLER' ? '<span class="text-sm text-slate-400 mt-1 block">คงเหลือ (ชิ้น/ม้วน)</span>' : ''}
                             </div>
                         </div>`;
                     };
@@ -545,17 +596,23 @@
                         Object.keys(STOCK_COLUMNS_WOOD).forEach(k => {
                             grid.innerHTML += createCard(k, STOCK_COLUMNS_WOOD[k].meter, result.stocks[k]);
                         });
-                    } else {
+                    } else if (currentSystem === 'PVC') {
                         const sortedKeys = Object.keys(result.stocks).sort((a,b) => parseInt(a) - parseInt(b));
                         sortedKeys.forEach(k => {
                             grid.innerHTML += createCard(`สูง ${k}`, 'ซม.', result.stocks[k]);
                         });
+                    } else if (currentSystem === 'ROLLER') {
+                        grid.innerHTML += createCard('จำนวนคงเหลือ', '', result.stocks['คงเหลือ']);
                     }
 
                     document.getElementById('productCard').classList.remove('hidden');
                 } else {
                     document.getElementById('errorMessage').classList.remove('hidden');
-                    document.getElementById('errorText').innerText = `ไม่พบรหัส: ${code} ในระบบ ${currentSystem === 'WOOD' ? 'มู่ลี่ไม้' : 'ฉาก PVC'}`;
+                    let systemName = 'มู่ลี่ไม้';
+                    if (currentSystem === 'PVC') systemName = 'ฉาก PVC';
+                    else if (currentSystem === 'ROLLER') systemName = 'ม่านม้วน';
+                    
+                    document.getElementById('errorText').innerText = `ไม่พบรหัส: ${code} ในระบบ ${systemName}`;
                 }
             } catch (error) {
                 console.error(error);
