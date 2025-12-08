@@ -7,15 +7,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script>
-        // --- SECURITY SCRIPT: ป้องกันการคลิกขวาและคีย์ลัด ---
-        document.addEventListener('contextmenu', event => event.preventDefault());
-        document.onkeydown = function(e) {
-            if(e.keyCode == 123) { return false; } // F12
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; } // Ctrl+Shift+I
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; } // Ctrl+Shift+C
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; } // Ctrl+Shift+J
-            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // Ctrl+U
-        }
+        // --- ADVANCED SECURITY: Anti-Debug & Obfuscation ---
+        // ป้องกันคลิกขวาและคีย์ลัด
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.onkeydown = e => {
+            if(e.keyCode == 123) return false; 
+            if(e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false;
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+        };
+        
+        // เคลียร์ Console เพื่อไม่ให้เห็นข้อมูลหลุด
+        setInterval(() => { console.clear(); }, 2000);
 
         tailwind.config = {
             theme: {
@@ -77,6 +79,7 @@
             font-weight: 600;
         }
         
+        /* ป้องกันการลากคลุมดำ */
         .noselect {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -366,11 +369,20 @@
     </div>
 
     <script>
-        // --- DATA URLs (Direct Links) ---
-        const WOOD_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv";
-        const PVC_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1230787558&single=true&output=csv";
-        const ROLLER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1019928538&single=true&output=csv";
-        const ALU_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1880232984&single=true&output=csv";
+        // --- DATA OBFS (Hex encoded URLs) ---
+        // Hex encoding is safer than Base64 for simple obfuscation as it uses only 0-9, a-f
+        const _0x1a2b = [
+            "68747470733a2f2f646f63732e676f6f676c652e636f6d2f7370726561647368656574732f642f652f32504143582d3176517a324f746a7a52426d65556d4c4f5453674a2d427432776f5a5069523951797a76495763425861636865473349706c6566465a453636795759453433715652516f3244414f50753955436c68352f7075623f6769643d313133323439383134352673696e676c653d74727565266f75747075743d637376", // WOOD
+            "68747470733a2f2f646f63732e676f6f676c652e636f6d2f7370726561647368656574732f642f652f32504143582d3176517a324f746a7a52426d65556d4c4f5453674a2d427432776f5a5069523951797a76495763425861636865473349706c6566465a453636795759453433715652516f3244414f50753955436c68352f7075623f6769643d313233303738373535382673696e676c653d74727565266f75747075743d637376", // PVC
+            "68747470733a2f2f646f63732e676f6f676c652e636f6d2f7370726561647368656574732f642f652f32504143582d3176517a324f746a7a52426d65556d4c4f5453674a2d427432776f5a5069523951797a76495763425861636865473349706c6566465a453636795759453433715652516f3244414f50753955436c68352f7075623f6769643d313031393932383533382673696e676c653d74727565266f75747075743d637376", // ROLLER
+            "68747470733a2f2f646f63732e676f6f676c652e636f6d2f7370726561647368656574732f642f652f32504143582d3176517a324f746a7a52426d65556d4c4f5453674a2d427432776f5a5069523951797a76495763425861636865473349706c6566465a453636795759453433715652516f3244414f50753955436c68352f7075623f6769643d313838303233323938342673696e676c653d74727565266f75747075743d637376"  // ALU
+        ];
+
+        function _0x3c4d(hex) {
+            var str = '';
+            for (var i = 0; i < hex.length; i += 2) str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+            return str;
+        }
 
         let currentSystem = 'WOOD'; 
         let cache = { WOOD: null, PVC: null, ROLLER: null, ALU: null };
@@ -617,10 +629,10 @@
             if (cache[currentSystem]) return cache[currentSystem];
             
             let url;
-            if (currentSystem === 'WOOD') url = WOOD_CSV_URL;
-            else if (currentSystem === 'ALU') url = ALU_CSV_URL;
-            else if (currentSystem === 'PVC') url = PVC_CSV_URL;
-            else if (currentSystem === 'ROLLER') url = ROLLER_CSV_URL;
+            if (currentSystem === 'WOOD') url = _0x3c4d(_0x1a2b[0]);
+            else if (currentSystem === 'PVC') url = _0x3c4d(_0x1a2b[1]);
+            else if (currentSystem === 'ROLLER') url = _0x3c4d(_0x1a2b[2]);
+            else if (currentSystem === 'ALU') url = _0x3c4d(_0x1a2b[3]);
 
             try {
                 const response = await fetch(url, { cache: "no-store" }); // Prevent caching issues
