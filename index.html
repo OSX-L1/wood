@@ -7,6 +7,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script>
+        // --- SECURITY SCRIPT: ป้องกันการคลิกขวาและคีย์ลัด ---
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) { return false; } // F12
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; } // Ctrl+Shift+I
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; } // Ctrl+Shift+C
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; } // Ctrl+Shift+J
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // Ctrl+U
+        }
+
         tailwind.config = {
             theme: {
                 extend: {
@@ -66,9 +76,18 @@
             border-right: 4px solid #E63946;
             font-weight: 600;
         }
+        
+        .noselect {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
     </style>
 </head>
-<body class="bg-gray-50 h-[100dvh] font-sans text-slate-800 flex overflow-hidden">
+<body class="bg-gray-50 h-[100dvh] font-sans text-slate-800 flex overflow-hidden noselect">
 
     <!-- Mobile Menu Button -->
     <button onclick="toggleSidebar()" class="md:hidden fixed top-3 left-3 z-50 bg-white/90 backdrop-blur p-2.5 rounded-xl shadow-lg border border-slate-100 text-slate-600 active:scale-95 transition-transform">
@@ -119,7 +138,7 @@
             <a href="#" onclick="switchSystem('PVC')" id="menu-PVC" class="menu-item flex items-center px-6 py-4 text-slate-600 hover:bg-slate-50 transition-colors">
                 <div class="w-8 flex justify-center mr-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                     </svg>
                 </div>
                 <div class="flex flex-col">
@@ -347,10 +366,11 @@
     </div>
 
     <script>
-        const WOOD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv';
-        const PVC_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1230787558&single=true&output=csv';
-        const ROLLER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1019928538&single=true&output=csv';
-        const ALU_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1880232984&single=true&output=csv';
+        // --- DATA URLs (Direct Links) ---
+        const WOOD_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv";
+        const PVC_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1230787558&single=true&output=csv";
+        const ROLLER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1019928538&single=true&output=csv";
+        const ALU_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1880232984&single=true&output=csv";
 
         let currentSystem = 'WOOD'; 
         let cache = { WOOD: null, PVC: null, ROLLER: null, ALU: null };
@@ -595,6 +615,7 @@
 
         async function fetchData() {
             if (cache[currentSystem]) return cache[currentSystem];
+            
             let url;
             if (currentSystem === 'WOOD') url = WOOD_CSV_URL;
             else if (currentSystem === 'ALU') url = ALU_CSV_URL;
@@ -602,7 +623,7 @@
             else if (currentSystem === 'ROLLER') url = ROLLER_CSV_URL;
 
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, { cache: "no-store" }); // Prevent caching issues
                 if (!response.ok) throw new Error('Network Error');
                 const text = await response.text();
                 let parsedData;
