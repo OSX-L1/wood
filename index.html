@@ -25,7 +25,7 @@
         const manifest = {
             "name": "SUNNY Stock Checker",
             "short_name": "SUNNY Stock",
-            "start_url": window.location.href, // Dynamic URL
+            "start_url": window.location.href, 
             "display": "standalone",
             "background_color": "#F1FAEE",
             "theme_color": "#E63946",
@@ -123,6 +123,18 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* --- Intro Animation Styles (อัปเดตให้ชัดเจนขึ้น) --- */
+        @keyframes letterSlideIn {
+            0% { transform: translateX(100px); opacity: 0; }
+            60% { transform: translateX(-10px); opacity: 1; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        .letter-animate {
+            display: inline-block;
+            opacity: 0; /* เริ่มต้นซ่อนไว้ */
+            animation: letterSlideIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
         .menu-item.active {
             background-color: #FEF2F2;
             color: #E63946;
@@ -142,9 +154,10 @@
 </head>
 <body class="bg-gray-50 h-[100dvh] font-sans text-slate-800 flex overflow-hidden noselect">
 
-    <!-- Intro Splash -->
-    <div id="intro-splash" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center transition-opacity duration-700 ease-out">
+    <!-- Intro Splash Screen (ปรับ z-index สูงสุดเพื่อให้แน่ใจว่าแสดงผล) -->
+    <div id="intro-splash" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-700 ease-out">
         <div class="flex items-center gap-1 md:gap-2">
+            <!-- Animation Letters -->
             <span class="text-7xl md:text-9xl font-black text-sunny-red italic tracking-tighter letter-animate" style="animation-delay: 0.1s">S</span>
             <span class="text-7xl md:text-9xl font-black text-sunny-red italic tracking-tighter letter-animate" style="animation-delay: 0.2s">U</span>
             <span class="text-7xl md:text-9xl font-black text-sunny-red italic tracking-tighter letter-animate" style="animation-delay: 0.3s">N</span>
