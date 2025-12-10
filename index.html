@@ -118,10 +118,10 @@
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
         .noselect { -webkit-user-select: none; user-select: none; }
         
-        /* Vertical Ticker Animation (Fixed for Taller Items) */
+        /* Vertical Ticker Animation (FIXED: Increased height for mobile readability) */
         .ticker-wrap {
             width: 100%;
-            height: 4.5rem; /* Increased Height for 2 lines (~72px) */
+            height: 7rem; /* เพิ่มความสูงเป็น 7rem (ประมาณ 4-5 บรรทัด) */
             overflow: hidden;
             position: relative;
         }
@@ -203,7 +203,7 @@
                 <div id="pinned-news-wrapper" class="space-y-2"></div>
                 
                 <!-- Scrolling News (Vertical Ticker - Taller & Wrap) -->
-                <div id="scrolling-news-wrapper" class="hidden bg-white/80 backdrop-blur rounded-xl border border-slate-200 p-2 shadow-sm flex items-start gap-3 h-20 relative z-10 overflow-hidden">
+                <div id="scrolling-news-wrapper" class="hidden bg-white/80 backdrop-blur rounded-xl border border-slate-200 p-2 shadow-sm flex items-start gap-3 h-28 relative z-10 overflow-hidden">
                     <div class="shrink-0 flex items-center gap-2 pr-3 border-r border-slate-100 h-full relative z-20 bg-white/80">
                         <div class="bg-blue-50 text-blue-600 p-1.5 rounded-lg">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
@@ -455,7 +455,7 @@
             document.getElementById('app-title-display').innerText = appConfig.appTitle;
         }
 
-        // --- NEWS LOGIC (REVISED VERTICAL) ---
+        // --- NEWS LOGIC (REVISED VERTICAL FIX) ---
         function renderNews() {
             const container = document.getElementById('news-container');
             const pinnedWrapper = document.getElementById('pinned-news-wrapper');
@@ -496,7 +496,7 @@
                 pinnedWrapper.appendChild(el);
             });
 
-            // 2. Render Scrolling (Vertical - Fixed for 2 lines)
+            // 2. Render Scrolling (Vertical - Fixed for 4 lines)
             if (scrollItems.length > 0) {
                 scrollWrapper.classList.remove('hidden');
                 scrollTrack.innerHTML = '';
@@ -507,16 +507,16 @@
                     const badgeColor = item.badgeColor || "#E63946";
                     const textColor = item.textColor || "#334155";
 
-                    // Changed h-14 to h-[4.5rem] (h-18) to fit 2 lines
-                    // Removed truncate, added line-clamp-2
+                    // Changed h-28 (7rem) to fit 4 lines (~112px)
+                    // Changed line-clamp-2 to line-clamp-4
                     return `
-                        <div class="h-[4.5rem] flex items-center gap-3 px-2 w-full shrink-0">
+                        <div class="h-28 flex items-center gap-3 px-2 w-full shrink-0">
                             <div class="flex-1 min-w-0 flex flex-col justify-center h-full">
                                 <div class="flex items-center gap-2 mb-0.5">
                                     ${isNew ? `<span class="px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold text-white" style="background-color: ${badgeColor}">${badgeText}</span>` : ''}
                                     <span class="text-[10px] text-slate-400">${formatDate(item.date)}</span>
                                 </div>
-                                <div class="text-sm font-medium whitespace-normal break-words leading-snug line-clamp-2" style="color: ${textColor}">${item.text}</div>
+                                <div class="text-sm font-medium whitespace-normal break-words leading-snug line-clamp-4" style="color: ${textColor}">${item.text}</div>
                             </div>
                         </div>
                     `;
