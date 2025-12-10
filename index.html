@@ -751,24 +751,33 @@
         function parsePvcCSV(text) { const lines = text.trim().split('\n'); const data = {}; const headerRow = lines[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, '')); const heightMap = []; for(let i = 2; i < headerRow.length; i++) { if(headerRow[i] && !isNaN(parseInt(headerRow[i]))) { heightMap.push({ index: i, label: headerRow[i] }); } } for (let i = 2; i < lines.length; i++) { const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); const cleanRow = row.map(cell => cell ? cell.trim().replace(/^"|"$/g, '') : ''); let code = cleanRow[0]; if (code) { code = code.toUpperCase(); if (!isValidCode(code)) continue; if (!data[code]) data[code] = { name: cleanRow[1] || 'ไม่ระบุชื่อ', stocks: {} }; heightMap.forEach(h => { if(cleanRow.length > h.index) { const val = parseInt(cleanRow[h.index].replace(/,/g, ''), 10) || 0; data[code].stocks[h.label] = (data[code].stocks[h.label] || 0) + val; } }); } } return data; }
         function parseRollerCSV(text) { const lines = text.trim().split('\n'); const data = {}; for (let i = 3; i < lines.length; i++) { const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); const cleanRow = row.map(cell => cell ? cell.trim().replace(/^"|"$/g, '') : ''); let code = cleanRow[0]; if (code) { code = code.toUpperCase(); if (!isValidCode(code)) continue; const val = parseInt(cleanRow[2].replace(/,/g, ''), 10) || 0; if (!data[code]) { data[code] = { name: cleanRow[1] || 'ไม่ระบุชื่อ', stocks: { 'คงเหลือ': val } }; } else { data[code].stocks['คงเหลือ'] += val; } } } return data; }
 
-        async function fetchData() {
-            if (cache[currentSystem]) return cache[currentSystem];
-            let url = (currentSystem==='WOOD')?WOOD_CSV_URL:(currentSystem==='ALU')?ALU_CSV_URL:(currentSystem==='PVC')?PVC_CSV_URL:ROLLER_CSV_URL;
+        async function fetchData(sysId) {
+            const system = sysId || currentSystem; // Fallback or strict? Better strict.
+            if (cache[system]) return cache[system];
+            let url = (system==='WOOD')?WOOD_CSV_URL:(system==='ALU')?ALU_CSV_URL:(system==='PVC')?PVC_CSV_URL:ROLLER_CSV_URL;
             try {
                 const response = await fetch(url, { cache: "no-store" }); if (!response.ok) throw new Error('Network Error');
                 const text = await response.text(); let parsedData;
-                if (currentSystem==='WOOD') parsedData = parseWoodCSV(text); else if (currentSystem==='ALU') parsedData = parseAluCSV(text); else if (currentSystem==='PVC') parsedData = parsePvcCSV(text); else parsedData = parseRollerCSV(text);
-                cache[currentSystem] = parsedData; 
-                document.getElementById('lastUpdateDisplay').innerText = new Date().toLocaleDateString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'; 
+                if (system==='WOOD') parsedData = parseWoodCSV(text); else if (system==='ALU') parsedData = parseAluCSV(text); else if (system==='PVC') parsedData = parsePvcCSV(text); else parsedData = parseRollerCSV(text);
+                cache[system] = parsedData; 
+                // Only update time if we are still on the same system
+                if (currentSystem === system) {
+                    document.getElementById('lastUpdateDisplay').innerText = new Date().toLocaleDateString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'; 
+                }
                 return parsedData;
             } catch (e) { console.error(e); throw e; }
         }
 
         async function updateProductList() {
+            const activeSystem = currentSystem; // Snapshot
             const browse = document.getElementById('browseListContainer');
             browse.innerHTML = `<div class="flex justify-center items-center h-full text-slate-400"><span class="loader w-6 h-6 border-2 border-slate-300 border-t-sunny-red rounded-full mr-2"></span> กำลังโหลด...</div>`;
             try {
-                const data = await fetchData();
+                const data = await fetchData(activeSystem);
+                
+                // Prevent race condition: If user switched system while fetching, ignore this result
+                if (currentSystem !== activeSystem) return;
+
                 const datalist = document.getElementById('codeSuggestions'); datalist.innerHTML = ''; browse.innerHTML = '';
                 const codes = Object.keys(data).sort();
                 if(codes.length===0) { browse.innerHTML = `<div class="text-center text-slate-400 mt-10">ไม่พบสินค้า</div>`; return; }
@@ -790,7 +799,7 @@
             const btn = document.getElementById('searchButton'); btn.disabled = true; btn.innerHTML = '<span class="loader block w-5 h-5 border-2 border-white/50 border-t-white rounded-full"></span>';
             
             try {
-                const data = await fetchData(); const result = data[code];
+                const data = await fetchData(currentSystem); const result = data[code];
                 document.getElementById('loadingIndicator').classList.add('hidden'); btn.disabled = false; btn.innerText = 'ค้นหา';
                 if (result) {
                     document.getElementById('productCodeDisplay').innerText = code; document.getElementById('productName').innerText = result.name;
