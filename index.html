@@ -707,6 +707,19 @@
         function toggleQDetails() { document.getElementById('qDetails').classList.toggle('hidden'); }
         function captureQuotation() { html2canvas(document.querySelector("#quotationModal > div"), { scale: 2, useCORS: true }).then(canvas => { const link = document.createElement('a'); link.download = `Sunny_Quote_${Date.now()}.png`; link.href = canvas.toDataURL(); link.click(); }); }
 
+        // New delete function for Online Mode
+        async function deleteOnlineQuote(docId) {
+            if(!confirm('ยืนยันการลบข้อมูลนี้ถาวร?')) return;
+            try {
+                await db.collection("quotations").doc(docId).delete();
+                showToast("ลบข้อมูลเรียบร้อย");
+                loadSavedQuotations();
+            } catch(e) {
+                console.error(e);
+                alert("เกิดข้อผิดพลาด: " + e.message);
+            }
+        }
+
         function saveCurrentQuotation() {
             if (!confirm('ยืนยันบันทึกใบเสนอราคานี้เข้าสู่ระบบ?')) return;
             const qData = {
@@ -759,7 +772,9 @@
                     <div class="text-right">
                         <div class="font-bold text-sunny-red">${q.total}</div>
                         <button onclick='viewSavedQuote(${JSON.stringify(q)})' class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 mt-1">ดูข้อมูล</button>
-                        ${!isOnlineMode ? `<button onclick="deleteOfflineQuote(${q.id})" class="text-xs text-red-400 ml-1">ลบ</button>` : ''} 
+                        ${isOnlineMode 
+                            ? `<button onclick="deleteOnlineQuote('${q.docId}')" class="text-xs text-white bg-red-400 hover:bg-red-500 px-2 py-1 rounded ml-1">ลบ</button>` 
+                            : `<button onclick="deleteOfflineQuote(${q.id})" class="text-xs text-white bg-red-400 hover:bg-red-500 px-2 py-1 rounded ml-1">ลบ</button>`} 
                     </div>
                 `;
                 list.appendChild(div);
