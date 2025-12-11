@@ -86,6 +86,7 @@
                             appConfig.newsItems.forEach(item => {
                                 if(!item.badgeLabel) item.badgeLabel = "NEW!";
                                 if(!item.badgeColor) item.badgeColor = "#E63946";
+                                if(!item.badgeTextColor) item.badgeTextColor = "#FFFFFF";
                                 if(!item.textColor) item.textColor = "#334155";
                             });
 
@@ -118,10 +119,10 @@
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
         .noselect { -webkit-user-select: none; user-select: none; }
         
-        /* Vertical Ticker Animation (FIXED: Increased height for mobile readability) */
+        /* Vertical Ticker Animation (Fixed for Mobile) */
         .ticker-wrap {
             width: 100%;
-            height: 7rem; /* เพิ่มความสูงเป็น 7rem (ประมาณ 4-5 บรรทัด) */
+            height: 7rem; /* 4-5 lines */
             overflow: hidden;
             position: relative;
         }
@@ -137,6 +138,12 @@
             0% { transform: translateY(0); }
             100% { transform: translateY(-50%); } 
         }
+        
+        /* Toast Animation */
+        @keyframes slideDown { 0% { transform: translate(-50%, -100%); opacity: 0; } 100% { transform: translate(-50%, 20px); opacity: 1; } }
+        @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+        .toast-show { animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .toast-hide { animation: fadeOut 0.5s forwards; }
     </style>
 </head>
 <body class="bg-gray-50 h-[100dvh] font-sans text-slate-800 flex overflow-hidden noselect">
@@ -145,6 +152,27 @@
     <div id="intro-splash" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-700 ease-out">
         <h1 class="text-6xl font-black text-sunny-red italic tracking-tighter">SUNNY</h1>
         <p class="text-sm font-bold text-slate-400 mt-4 tracking-widest">STOCK SYSTEM</p>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-0 left-1/2 -translate-x-1/2 z-[200] opacity-0 pointer-events-none bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+        <span id="toast-message" class="text-sm font-bold">บันทึกสำเร็จ</span>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-xs text-center animate-fade-in-up">
+            <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">ยืนยันการลบ?</h3>
+            <p class="text-slate-500 text-sm mb-6">คุณต้องการลบประกาศนี้ใช่หรือไม่?</p>
+            <div class="flex gap-2">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 font-bold text-sm transition-colors">ยกเลิก</button>
+                <button id="confirmDeleteBtn" class="flex-1 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 font-bold text-sm shadow-lg shadow-red-200 transition-colors">ลบประกาศ</button>
+            </div>
+        </div>
     </div>
 
     <!-- Mobile Menu Button -->
@@ -173,7 +201,7 @@
             <button onclick="toggleHelpModal(true)" class="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-600 py-3 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors">
                 วิธีใช้งาน
             </button>
-            <button onclick="openAdminLogin()" class="w-full flex items-center justify-center gap-2 text-slate-300 hover:text-sunny-red py-2 rounded-xl text-xs transition-colors">
+            <button onclick="checkAdminLogin()" class="w-full flex items-center justify-center gap-2 text-slate-300 hover:text-sunny-red py-2 rounded-xl text-xs transition-colors">
                 Admin Mode
             </button>
         </div>
@@ -197,12 +225,12 @@
                 </div>
             </div>
 
-            <!-- NEWS SECTION (Updated Vertical) -->
+            <!-- NEWS SECTION (Fixed Badge Color & Ticker) -->
             <div id="news-container" class="space-y-3 hidden">
-                <!-- Pinned News (Static - Shows Full Text) -->
+                <!-- Pinned News -->
                 <div id="pinned-news-wrapper" class="space-y-2"></div>
                 
-                <!-- Scrolling News (Vertical Ticker - Taller & Wrap) -->
+                <!-- Scrolling News (Vertical Ticker) -->
                 <div id="scrolling-news-wrapper" class="hidden bg-white/80 backdrop-blur rounded-xl border border-slate-200 p-2 shadow-sm flex items-start gap-3 h-28 relative z-10 overflow-hidden">
                     <div class="shrink-0 flex items-center gap-2 pr-3 border-r border-slate-100 h-full relative z-20 bg-white/80">
                         <div class="bg-blue-50 text-blue-600 p-1.5 rounded-lg">
@@ -262,6 +290,7 @@
         <div class="bg-white rounded-2xl shadow-2xl max-w-xs w-full p-6 text-center animate-fade-in-up">
             <h3 class="text-lg font-bold text-slate-800 mb-4">ผู้ดูแลระบบ</h3>
             <input type="password" id="adminPassword" placeholder="รหัสผ่าน" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 mb-4 text-center focus:outline-none focus:ring-2 focus:ring-sunny-red" onkeypress="if(event.key === 'Enter') handleLogin()">
+            <p id="loginError" class="text-red-500 text-sm mb-4 hidden animate-pulse">รหัสผ่านไม่ถูกต้อง</p>
             <div class="flex gap-2">
                 <button onclick="closeAdminLogin()" class="flex-1 py-2 text-slate-500 hover:bg-slate-100 rounded-xl">ยกเลิก</button>
                 <button onclick="handleLogin()" class="flex-1 py-2 bg-sunny-red text-white rounded-xl hover:bg-red-700">เข้าสู่ระบบ</button>
@@ -269,7 +298,7 @@
         </div>
     </div>
 
-    <!-- Admin Config Modal (Independent Settings) -->
+    <!-- Admin Config Modal -->
     <div id="adminConfigModal" class="hidden fixed inset-0 bg-white z-[100] flex flex-col animate-fade-in-up">
         <div class="p-4 border-b flex justify-between items-center bg-slate-50">
             <h3 class="font-bold text-lg flex items-center gap-2">ตั้งค่าระบบ</h3>
@@ -321,6 +350,7 @@
         <div class="p-4 border-t bg-white flex justify-between items-center gap-3">
              <span id="admin-mode-status" class="text-xs font-bold">...</span>
             <div>
+                <button onclick="logoutAdmin()" id="logoutBtn" class="hidden px-4 py-2 text-red-600 font-bold hover:bg-red-50 rounded-xl mr-auto border border-red-200">ออกจากระบบ</button>
                 <button onclick="closeConfig()" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-xl mr-2">ยกเลิก</button>
                 <button onclick="saveConfig()" class="px-6 py-2 bg-sunny-red text-white font-bold rounded-xl shadow-lg hover:bg-red-700">บันทึก</button>
             </div>
@@ -431,7 +461,7 @@
         const ICONS = {
             wood: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>',
             alu: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>',
-            pvc: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>',
+            pvc: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>',
             roller: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>'
         };
 
@@ -478,6 +508,7 @@
                 const isNew = isDateNew(item.date);
                 const badgeText = item.badgeLabel || "NEW!";
                 const badgeColor = item.badgeColor || "#E63946";
+                const badgeTextColor = item.badgeTextColor || "#FFFFFF";
                 const textColor = item.textColor || "#334155";
                 
                 const el = document.createElement('div');
@@ -487,7 +518,7 @@
                     <div class="text-sunny-red mt-0.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" /></svg></div>
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            ${isNew ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-white shadow-sm" style="background-color: ${badgeColor}">${badgeText}</span>` : ''}
+                            ${isNew ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm" style="background-color: ${badgeColor}; color: ${badgeTextColor}">${badgeText}</span>` : ''}
                             <span class="text-[10px] text-slate-400 font-medium bg-white px-1.5 rounded border border-slate-100">${formatDate(item.date)}</span>
                         </div>
                         <p class="text-sm font-semibold whitespace-normal break-words leading-relaxed" style="color: ${textColor}">${item.text}</p>
@@ -505,6 +536,7 @@
                     const isNew = isDateNew(item.date);
                     const badgeText = item.badgeLabel || "NEW!";
                     const badgeColor = item.badgeColor || "#E63946";
+                    const badgeTextColor = item.badgeTextColor || "#FFFFFF";
                     const textColor = item.textColor || "#334155";
 
                     // Changed h-28 (7rem) to fit 4 lines (~112px)
@@ -513,7 +545,7 @@
                         <div class="h-28 flex items-center gap-3 px-2 w-full shrink-0">
                             <div class="flex-1 min-w-0 flex flex-col justify-center h-full">
                                 <div class="flex items-center gap-2 mb-0.5">
-                                    ${isNew ? `<span class="px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold text-white" style="background-color: ${badgeColor}">${badgeText}</span>` : ''}
+                                    ${isNew ? `<span class="px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold" style="background-color: ${badgeColor}; color: ${badgeTextColor}">${badgeText}</span>` : ''}
                                     <span class="text-[10px] text-slate-400">${formatDate(item.date)}</span>
                                 </div>
                                 <div class="text-sm font-medium whitespace-normal break-words leading-snug line-clamp-4" style="color: ${textColor}">${item.text}</div>
@@ -555,14 +587,80 @@
         }
 
         // --- ADMIN FUNCTIONS ---
-        function openAdminLogin() { document.getElementById('adminLoginModal').classList.remove('hidden'); document.getElementById('adminPassword').value=''; document.getElementById('adminPassword').focus(); }
-        function closeAdminLogin() { document.getElementById('adminLoginModal').classList.add('hidden'); }
-        function handleLogin() { 
-            if(document.getElementById('adminPassword').value === 'sn1988') { 
-                closeAdminLogin(); 
-                openConfig(); 
-            } else alert('รหัสผ่านผิด'); 
+        // Check local storage before showing modal
+        function checkAdminLogin() {
+            if (localStorage.getItem('isAdminLoggedIn') === 'true') {
+                openConfig();
+            } else {
+                openAdminLogin();
+            }
         }
+
+        function openAdminLogin() { 
+            document.getElementById('adminLoginModal').classList.remove('hidden'); 
+            document.getElementById('adminPassword').value=''; 
+            document.getElementById('loginError').classList.add('hidden'); // Reset error
+            document.getElementById('adminPassword').focus(); 
+        }
+        function closeAdminLogin() { document.getElementById('adminLoginModal').classList.add('hidden'); }
+        
+        function handleLogin() { 
+            const pass = document.getElementById('adminPassword').value;
+            if(pass === 'sn1988') { 
+                localStorage.setItem('isAdminLoggedIn', 'true');
+                closeAdminLogin(); 
+                showToast("เข้าสู่ระบบสำเร็จ");
+                openConfig(); 
+            } else {
+                const err = document.getElementById('loginError');
+                err.classList.remove('hidden');
+                err.classList.remove('animate-pulse');
+                void err.offsetWidth; // trigger reflow
+                err.classList.add('animate-pulse');
+            }
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem('isAdminLoggedIn');
+            closeConfig();
+            showToast("ออกจากระบบแล้ว");
+        }
+
+        // --- TOAST FUNCTION ---
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            toastMsg.innerText = msg;
+            
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'toast-hide');
+            toast.classList.add('toast-show');
+            
+            if(toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('toast-show');
+                toast.classList.add('toast-hide');
+            }, 2500);
+        }
+
+        // --- DELETE MODAL FUNCTIONS ---
+        let deleteTargetIdx = -1;
+        function deleteNews(idx) {
+            deleteTargetIdx = idx;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            deleteTargetIdx = -1;
+        }
+        // Bind Confirm Action
+        document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+            if(deleteTargetIdx !== -1) {
+                tempConfig.newsItems.splice(deleteTargetIdx, 1);
+                renderAdminNews();
+                closeConfirmModal();
+            }
+        });
 
         let tempConfig = {};
         function openConfig() {
@@ -570,6 +668,7 @@
             document.getElementById('adminConfigModal').classList.remove('hidden');
             document.getElementById('conf-app-title').value = tempConfig.appTitle;
             document.getElementById('conf-news-speed').value = tempConfig.newsSettings.speed || 3;
+            document.getElementById('logoutBtn').classList.remove('hidden'); // Show logout button
 
             const st = document.getElementById('admin-mode-status');
             st.innerText = isOnlineMode ? "สถานะ: Online Mode" : "สถานะ: Offline Mode";
@@ -616,6 +715,7 @@
                 const realIdx = tempConfig.newsItems.findIndex(x => x.id === item.id);
                 const badgeLabel = item.badgeLabel || "NEW!";
                 const badgeColor = item.badgeColor || "#E63946";
+                const badgeTextColor = item.badgeTextColor || "#FFFFFF";
                 const textColor = item.textColor || "#334155";
                 
                 const div = document.createElement('div');
@@ -635,28 +735,39 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-slate-200 pt-3">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 border-t border-slate-200 pt-3">
                             <div>
                                 <label class="block text-[10px] text-slate-500 font-bold mb-1">คำป้าย (เช่น NEW!)</label>
                                 <input type="text" value="${badgeLabel}" onchange="tempConfig.newsItems[${realIdx}].badgeLabel = this.value" class="w-full p-1.5 text-xs border rounded bg-white">
                             </div>
-                            <div>
-                                <label class="block text-[10px] text-slate-500 font-bold mb-1">สีพื้นหลังป้าย</label>
-                                <div class="flex items-center gap-2">
-                                    <input type="color" value="${badgeColor}" onchange="tempConfig.newsItems[${realIdx}].badgeColor = this.value; this.nextElementSibling.innerText = this.value" class="h-8 w-8 p-0 border rounded cursor-pointer">
-                                    <span class="text-[10px] text-slate-400 uppercase">${badgeColor}</span>
+                            
+                            <div class="flex gap-2">
+                                <div class="flex-1">
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีพื้นหลัง</label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="color" value="${badgeColor}" onchange="tempConfig.newsItems[${realIdx}].badgeColor = this.value; this.nextElementSibling.innerText = this.value" class="h-8 w-8 p-0 border rounded cursor-pointer shrink-0">
+                                        <span class="text-[8px] text-slate-400 uppercase hidden md:inline truncate">${badgeColor}</span>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีตัวอักษร</label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="color" value="${badgeTextColor}" onchange="tempConfig.newsItems[${realIdx}].badgeTextColor = this.value;" class="h-8 w-8 p-0 border rounded cursor-pointer shrink-0">
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-[10px] text-slate-500 font-bold mb-1">สีข้อความประกาศ</label>
-                                <div class="flex items-center gap-2">
-                                    <input type="color" value="${textColor}" onchange="tempConfig.newsItems[${realIdx}].textColor = this.value; this.nextElementSibling.innerText = this.value" class="h-8 w-8 p-0 border rounded cursor-pointer">
-                                    <span class="text-[10px] text-slate-400 uppercase">${textColor}</span>
+
+                            <div class="flex gap-2">
+                                <div class="flex-1">
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีข้อความ</label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="color" value="${textColor}" onchange="tempConfig.newsItems[${realIdx}].textColor = this.value;" class="h-8 w-8 p-0 border rounded cursor-pointer shrink-0">
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-slate-500 font-bold mb-1">วันที่ (สำหรับการคำนวณ)</label>
-                                <input type="date" value="${item.date}" onchange="tempConfig.newsItems[${realIdx}].date = this.value" class="w-full p-1.5 text-xs border rounded bg-white text-slate-500">
+                                <div class="flex-[1.5]">
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">วันที่</label>
+                                    <input type="date" value="${item.date}" onchange="tempConfig.newsItems[${realIdx}].date = this.value" class="w-full p-1.5 text-xs border rounded bg-white text-slate-500">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -672,16 +783,11 @@
                 date: new Date().toISOString().split('T')[0],
                 badgeLabel: "NEW!",
                 badgeColor: "#E63946",
+                badgeTextColor: "#FFFFFF",
                 textColor: "#334155",
                 pinned: false
             });
             renderAdminNews();
-        }
-        function deleteNews(idx) {
-            if(confirm('ลบประกาศนี้?')) {
-                tempConfig.newsItems.splice(idx, 1);
-                renderAdminNews();
-            }
         }
         function togglePinNews(idx) {
             tempConfig.newsItems[idx].pinned = !tempConfig.newsItems[idx].pinned;
@@ -696,15 +802,21 @@
 
             if (isOnlineMode) {
                 db.collection("app_settings").doc("config").set(appConfig)
-                    .then(() => { alert('บันทึกเรียบร้อย (Online)'); closeConfig(); })
-                    .catch(e => alert('Error: ' + e.message));
+                    .then(() => { 
+                        showToast("บันทึกข้อมูลสำเร็จ");
+                        closeConfig(); 
+                    })
+                    .catch(e => {
+                        console.error(e);
+                        alert('Error: ' + e.message); // Fallback for critical error
+                    });
             } else {
                 localStorage.setItem('sunny_app_config', JSON.stringify(appConfig));
                 renderSidebar();
                 renderNews();
                 switchSystem(currentSystem);
+                showToast("บันทึกข้อมูลสำเร็จ");
                 closeConfig();
-                alert('บันทึกเรียบร้อย (Offline)');
             }
         }
         function closeConfig() { document.getElementById('adminConfigModal').classList.add('hidden'); }
