@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- PWA Meta Tags -->
+    <!-- PWA Meta Tags (iOS) -->
     <meta name="theme-color" content="#E63946">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SUNNY Stock">
+
+    <!-- PWA Manifest (Android/Chrome) - Embedded Base64 -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiU1VOTlkgU3RvY2sgU3lzdGVtIiwic2hvcnRfbmFtZSI6IlNVTk5ZIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiNFNjM5NDYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9jZG4taWNvbnS1wbmcuZmxhdGljb24uY29tLzUxMi8xMDYzLzEwNjMzNzYucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
     
     <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY</title>
 
@@ -27,30 +30,14 @@
 
     <script>
         // ==========================================
-        //  SECURITY SHIELD (ระบบป้องกันการเข้าถึง)
+        //  SECURITY SHIELD
         // ==========================================
-        
-        // 1. ป้องกันคลิกขวา (Disable Right Click)
         document.addEventListener('contextmenu', event => event.preventDefault());
-
-        // 2. ป้องกันคีย์ลัดสำหรับ Developer Tools (Disable DevTools Shortcuts)
         document.onkeydown = function(e) {
-            // F12
-            if (e.keyCode == 123) {
-                return false;
-            }
-            // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
-            if (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) {
-                return false;
-            }
-            // Ctrl+U (View Source)
-            if (e.ctrlKey && e.keyCode == 85) {
-                return false;
-            }
-            // Ctrl+S (Save Page)
-            if (e.ctrlKey && e.keyCode == 83) {
-                return false;
-            }
+            if (e.keyCode == 123) return false;
+            if (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) return false;
+            if (e.ctrlKey && e.keyCode == 85) return false;
+            if (e.ctrlKey && e.keyCode == 83) return false;
         };
 
         // ==========================================
@@ -115,7 +102,6 @@
                     db.collection("app_settings").doc("config").onSnapshot((doc) => {
                         if (doc.exists) {
                             appConfig = doc.data();
-                            // Data Migration
                             if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
                             const defaults = DEFAULT_CONFIG.calcSettings.factors;
                             if(!appConfig.calcSettings.factors) appConfig.calcSettings.factors = defaults;
@@ -131,7 +117,6 @@
                                 if(!item.badgeTextColor) item.badgeTextColor = "#FFFFFF";
                                 if(!item.textColor) item.textColor = "#334155";
                             });
-
                             localStorage.setItem('sunny_app_config', JSON.stringify(appConfig));
                             renderSidebar();
                             renderNews(); 
@@ -230,6 +215,11 @@
         </nav>
 
         <div class="p-6 border-t border-slate-100 space-y-3">
+            <!-- PWA Install Button (Hidden by default, shown via JS) -->
+            <button id="pwaInstallBtn" class="hidden w-full flex items-center justify-center gap-2 bg-slate-800 text-white py-3 rounded-xl text-sm font-bold hover:bg-black transition-colors mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                ติดตั้งแอพ
+            </button>
             <button onclick="toggleHelpModal(true)" class="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-600 py-3 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors">
                 วิธีใช้งาน
             </button>
@@ -497,86 +487,15 @@
         <div class="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-6 relative animate-fade-in-up max-h-[90vh] overflow-y-auto">
              <button onclick="toggleHelpModal(false)" class="absolute top-4 right-4 bg-slate-50 p-2 rounded-full hover:bg-slate-100 text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
              <h3 class="text-xl font-bold text-slate-800 mb-4">วิธีใช้งาน</h3>
-             <!-- Re-inserting original V13 detailed help content here based on user request -->
-             <div class="space-y-4 text-sm text-slate-600">
-                <!-- Search -->
-                <ul class="space-y-2 list-disc pl-4">
-                    <li>กรอกรหัสที่ต้องการเช็คในช่องว่าง หรือกดปุ่ม <strong>เลือกรหัส</strong> เพื่อดูรายการทั้งหมด</li>
-                    <li>โดยให้พิมพ์ตัวอักษรภาษาอังกฤษก่อน และตามด้วยเครื่องหมาย - และตามด้วยตัวเลข<br><span class="text-slate-400 text-xs">เช่น B35-30, SA-15, FW-510, FW-356</span></li>
-                    <li>กดปุ่ม <strong>ค้นหา</strong> ระบบจะแสดงข้อมูลสต๊อกคงเหลือขึ้นมาทันที</li>
-                </ul>
-
-                <!-- Size Logic -->
-                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-xs md:text-sm space-y-2">
-                    <p><span class="font-bold text-blue-700">• ตัวเลข 4ft (1.22 ม.), 4.5ft (1.37 ม.), 5ft (1.52 ม.)</span> หมายถึง ความกว้างของใบมู่ลี่</p>
-                    <p class="font-bold text-blue-800">กรณีที่เหลือ ให้ดูที่ 8FT ลงมาเรื่อยๆ</p>
-                    <p class="text-slate-500 italic">"เช่น ขนาดมู่ลี่ที่ลูกค้าต้องการสั่ง คือ กว้าง 168x200 แต่ขนาด 5.5FT หมด แต่ขนาด 8FT มี <strong>ลูกค้าก็สามารถสั่งได้ (ไม่ได้คิดเงินเพิ่ม) เราจะนําใบ 8FT มาตัดให้ลูกค้าเอง</strong>"</p>
-                </div>
-
-                <!-- Status Symbols -->
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <p class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">สัญลักษณ์สถานะ:</p>
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center shrink-0">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                            </div>
-                            <span class="font-medium text-slate-700">มีสินค้าพร้อมส่ง</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <div class="w-6 h-6 bg-red-100 text-red-400 rounded-full flex items-center justify-center shrink-0">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </div>
-                            <span class="font-medium text-slate-700">สินค้าหมด (0)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- News Section Example -->
-                 <div class="pt-4 border-t border-slate-100">
-                    <p class="font-bold text-slate-700 mb-2">ประกาศและข่าวสาร:</p>
-                    <ul class="list-none pl-2 space-y-1 text-xs text-slate-500">
-                        <li>📌 <strong>ปักหมุด (ด้านบน):</strong> ข้อความสำคัญ โปรโมชั่น หรือแจ้งเตือนเร่งด่วน</li>
-                        <li>📢 <strong>ตัววิ่ง (ด้านล่าง):</strong> ข่าวสารทั่วไป สถานะระบบ หรือข้อมูลอัปเดต</li>
-                    </ul>
-                    <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">ตัวอย่างการแสดงผล</p>
-                        <div class="space-y-2">
-                            <!-- Pinned Mock -->
-                            <div class="bg-white border-l-4 border-l-sunny-red border-y border-r border-slate-200 p-2 rounded-r-lg shadow-sm flex items-start gap-2">
-                                <div class="text-sunny-red mt-0.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" /></svg></div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-1.5 mb-0.5">
-                                        <span class="px-1 py-0.5 rounded text-[8px] font-bold text-white bg-sunny-red">โปรโมชั่น</span>
-                                        <span class="text-[8px] text-slate-400">10 ธ.ค. 68</span>
-                                    </div>
-                                    <p class="text-xs font-semibold text-slate-700 truncate">ม่านม้วนราคาพิเศษ!! ฟรีใบบังรางทุกชุด</p>
-                                </div>
-                            </div>
-                            <!-- Ticker Mock -->
-                            <div class="bg-white border border-slate-200 p-2 rounded-lg shadow-sm flex items-center gap-2">
-                                <div class="bg-blue-50 text-blue-600 p-1 rounded">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-1.5 mb-0.5">
-                                        <span class="px-1 py-0.5 rounded text-[8px] font-bold text-white bg-sunny-red">ประกาศ!!</span>
-                                        <span class="text-[8px] text-slate-400">10 ธ.ค. 68</span>
-                                    </div>
-                                    <p class="text-xs text-slate-600 truncate">ระบบเช็คสต็อกอยู่ในช่วงระหว่างการพัฒนา...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                 <!-- New Calculator Help -->
-                 <li class="pt-4 font-bold text-slate-700 border-t border-slate-200 mt-4">เมนูคำนวณราคา:</li>
-                 <ul class="list-none pl-2 space-y-1 text-xs text-slate-500">
+             <ul class="space-y-2 list-disc pl-4 text-sm text-slate-600">
+                 <li>กรอกรหัส หรือกดปุ่ม <strong>เลือกรหัส</strong></li>
+                 <li>พิมพ์ภาษาอังกฤษตามด้วยตัวเลข เช่น B35-30</li>
+                 <li class="pt-2 font-bold text-slate-700">เมนูคำนวณราคา:</li>
+                 <ul class="list-none pl-2 space-y-1 text-xs">
                     <li>🪟 <strong>ภายนอก:</strong> คิดค่าอุปกรณ์ 1,956 + รางบน/ล่าง + สลิง</li>
-                    <li>🏠 <strong>ม่านม้วน:</strong> คิดเฉพาะค่าผ้าตามพื้นที่ (ขั้นต่ำ 1.2 ตร.ล.)</li>
+                    <li>🏠 <strong>ม่านม้วน:</strong> คิดเฉพาะค่าผ้าตามพื้นที่ (ขั้นต่ำ 1.2 ตร.ม.)</li>
                  </ul>
-             </div>
+             </ul>
              <button onclick="toggleHelpModal(false)" class="mt-6 w-full bg-slate-900 text-white py-3 rounded-xl font-bold">ตกลง</button>
         </div>
     </div>
@@ -1021,7 +940,45 @@
                 `;
             }
             document.getElementById('app-title-display').innerText = appConfig.appTitle;
+            
+            // Show/Hide PWA Install Button
+            const installBtn = document.getElementById('pwaInstallBtn');
+            if (deferredPrompt) {
+                installBtn.classList.remove('hidden');
+                installBtn.onclick = () => {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('User accepted the install prompt');
+                        }
+                        deferredPrompt = null;
+                        installBtn.classList.add('hidden');
+                    });
+                };
+            }
         }
+
+        // PWA Install Prompt Logic
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Re-render sidebar to show the button if sidebar is already rendered
+            if(document.getElementById('sidebar-menu-container').innerHTML) {
+                // Just toggle the button visibility if already in DOM
+                 const installBtn = document.getElementById('pwaInstallBtn');
+                 if(installBtn) {
+                     installBtn.classList.remove('hidden');
+                     installBtn.onclick = () => {
+                        deferredPrompt.prompt();
+                        deferredPrompt.userChoice.then((choiceResult) => {
+                            deferredPrompt = null;
+                            installBtn.classList.add('hidden');
+                        });
+                    };
+                 }
+            }
+        });
 
         // --- GENERIC FUNCTIONS ---
         function switchSystem(system) {
