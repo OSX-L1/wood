@@ -1022,6 +1022,46 @@
             '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'
         ];
 
+        // Function to Insert HTML Tags for Styling
+        function applyStyle(idx, style, type = 'text') {
+            const inputId = type === 'badge' ? `badge-input-${idx}` : `news-textarea-${idx}`;
+            const el = document.getElementById(inputId);
+            if(!el) return;
+
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const text = el.value;
+            const selected = text.substring(start, end);
+            
+            let formatted = selected;
+            // Wraps selected text with HTML tags
+            switch(style) {
+                case 'b': formatted = `<b>${selected}</b>`; break;
+                case 'i': formatted = `<i>${selected}</i>`; break;
+                case 'u': formatted = `<u>${selected}</u>`; break;
+                case 's': formatted = `<s>${selected}</s>`; break;
+                case 'big': formatted = `<span style="font-size: 1.25em">${selected}</span>`; break;
+                case 'small': formatted = `<span style="font-size: 0.85em">${selected}</span>`; break;
+            }
+
+            // Replace text
+            const newText = text.substring(0, start) + formatted + text.substring(end);
+            el.value = newText;
+
+            // Update Config
+            if(type === 'badge') {
+                tempConfig.newsItems[idx].badgeLabel = newText;
+            } else {
+                tempConfig.newsItems[idx].text = newText;
+            }
+
+            // Restore focus and selection
+            el.focus();
+            // Move cursor to end of inserted block to continue typing if needed, or keep selection? 
+            // Usually simpler to just focus end.
+            el.selectionStart = el.selectionEnd = start + formatted.length;
+        }
+
         function insertEmoji(idx, char, type = 'text') {
             const inputId = type === 'badge' ? `badge-input-${idx}` : `news-textarea-${idx}`;
             const pickerId = type === 'badge' ? `emoji-picker-badge-${idx}` : `emoji-picker-${idx}`;
@@ -1057,6 +1097,21 @@
                 let emojiGridText = EMOJI_LIST.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'text')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
                 let emojiGridBadge = EMOJI_LIST.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'badge')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
                 
+                // Toolbar Button Helper
+                const createToolbar = (type) => `
+                    <div class="flex gap-1 mb-1.5 flex-wrap">
+                        <button onclick="applyStyle(${realIdx}, 'b', '${type}')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">B</button>
+                        <button onclick="applyStyle(${realIdx}, 'i', '${type}')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] italic hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">I</button>
+                        <button onclick="applyStyle(${realIdx}, 'u', '${type}')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] underline hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">U</button>
+                        <button onclick="applyStyle(${realIdx}, 's', '${type}')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] line-through hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">S</button>
+                        <div class="w-px bg-slate-200 mx-1"></div>
+                        <button onclick="applyStyle(${realIdx}, 'big', '${type}')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50 hover:text-sunny-red">T+</button>
+                        <button onclick="applyStyle(${realIdx}, 'small', '${type}')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50 hover:text-sunny-red">T-</button>
+                        <div class="w-px bg-slate-200 mx-1"></div>
+                        <button onclick="document.getElementById('emoji-picker-${type === 'badge' ? 'badge-' : ''}${realIdx}').classList.toggle('hidden')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50 hover:text-sunny-red">😀</button>
+                    </div>
+                `;
+
                 list.innerHTML += `
                     <div class="p-4 rounded-xl border ${item.pinned ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} relative group shadow-sm">
                         <div class="flex flex-col gap-3">
@@ -1064,13 +1119,14 @@
                                 <div class="flex-1 space-y-2">
                                     <div class="flex justify-between items-end">
                                         <label class="text-[10px] text-slate-400 font-bold uppercase">ข้อความ</label>
-                                        <button onclick="document.getElementById('emoji-picker-${realIdx}').classList.toggle('hidden')" class="text-[10px] bg-white border border-slate-200 hover:border-sunny-red text-slate-500 hover:text-sunny-red px-2 py-1 rounded-lg font-bold flex items-center gap-1 transition-all">
-                                            <span>😀</span> แทรก Emoji
-                                        </button>
                                     </div>
+                                    
+                                    <!-- Toolbar for Text -->
+                                    ${createToolbar('text')}
+
                                     <div class="relative">
-                                        <textarea id="news-textarea-${realIdx}" rows="2" class="w-full p-2 text-sm border rounded bg-white focus:outline-none focus:ring-1 focus:ring-sunny-red" onchange="tempConfig.newsItems[${realIdx}].text=this.value">${item.text}</textarea>
-                                        <div id="emoji-picker-${realIdx}" class="hidden absolute top-0 right-0 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64 mt-10">
+                                        <textarea id="news-textarea-${realIdx}" rows="2" class="w-full p-2 text-sm border rounded bg-white focus:outline-none focus:ring-1 focus:ring-sunny-red font-mono text-slate-600" onchange="tempConfig.newsItems[${realIdx}].text=this.value">${item.text}</textarea>
+                                        <div id="emoji-picker-${realIdx}" class="hidden absolute top-8 left-0 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64 mt-1">
                                             <div class="flex justify-between items-center px-2 pb-2 border-b border-slate-100 mb-2">
                                                 <span class="text-xs font-bold text-slate-400">เลือก Emoji</span>
                                                 <button onclick="document.getElementById('emoji-picker-${realIdx}').classList.add('hidden')" class="text-slate-300 hover:text-red-500 text-xs">✕</button>
@@ -1081,7 +1137,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex flex-col gap-2 pt-8">
+                                <div class="flex flex-col gap-2 pt-16">
                                     <button onclick="togglePinNews(${realIdx})" class="${item.pinned?'text-white bg-sunny-red':'text-slate-400 bg-white border'} p-2 rounded-lg shadow-sm transition-all hover:scale-105">
                                         <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/></svg>
                                     </button>
@@ -1090,13 +1146,14 @@
                             </div>
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 border-t pt-3">
                                 
-                                <!-- Badge Label Section with Emoji -->
+                                <!-- Badge Label Section with Toolbar -->
                                 <div class="relative">
-                                    <div class="flex justify-between items-end mb-1">
-                                        <label class="block text-[10px] text-slate-500 font-bold">คำป้าย</label>
-                                        <button onclick="document.getElementById('emoji-picker-badge-${realIdx}').classList.toggle('hidden')" class="text-[9px] text-slate-400 hover:text-sunny-red cursor-pointer">😀</button>
-                                    </div>
-                                    <input type="text" id="badge-input-${realIdx}" value="${item.badgeLabel}" onchange="tempConfig.newsItems[${realIdx}].badgeLabel=this.value" class="w-full p-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-sunny-red">
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">คำป้าย</label>
+                                    
+                                    <!-- Toolbar for Badge -->
+                                    ${createToolbar('badge')}
+
+                                    <input type="text" id="badge-input-${realIdx}" value="${item.badgeLabel}" onchange="tempConfig.newsItems[${realIdx}].badgeLabel=this.value" class="w-full p-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-sunny-red font-mono text-slate-600">
                                     
                                     <div id="emoji-picker-badge-${realIdx}" class="hidden absolute bottom-full left-0 mb-1 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64">
                                         <div class="flex justify-between items-center px-2 pb-2 border-b border-slate-100 mb-2">
@@ -1109,8 +1166,8 @@
                                     </div>
                                 </div>
 
-                                <div class="flex gap-2"><div class="flex-1"><label class="block text-[10px] text-slate-500 font-bold mb-1">สีพื้น</label><input type="color" value="${item.badgeColor}" onchange="tempConfig.newsItems[${realIdx}].badgeColor=this.value" class="h-8 w-full border rounded cursor-pointer"></div><div class="flex-1"><label class="block text-[10px] text-slate-500 font-bold mb-1">สีตัวอักษร</label><input type="color" value="${item.badgeTextColor}" onchange="tempConfig.newsItems[${realIdx}].badgeTextColor=this.value" class="h-8 w-full border rounded cursor-pointer"></div></div>
-                                <div class="flex gap-2"><div class="flex-1"><label class="block text-[10px] text-slate-500 font-bold mb-1">สีข้อความ</label><input type="color" value="${item.textColor}" onchange="tempConfig.newsItems[${realIdx}].textColor=this.value" class="h-8 w-full border rounded cursor-pointer"></div><div class="flex-[1.5]"><label class="block text-[10px] text-slate-500 font-bold mb-1">วันที่</label><input type="date" value="${item.date}" onchange="tempConfig.newsItems[${realIdx}].date=this.value" class="w-full p-1 text-xs border rounded"></div></div>
+                                <div class="flex gap-2 pt-6"><div class="flex-1"><label class="block text-[10px] text-slate-500 font-bold mb-1">สีพื้น</label><input type="color" value="${item.badgeColor}" onchange="tempConfig.newsItems[${realIdx}].badgeColor=this.value" class="h-8 w-full border rounded cursor-pointer"></div><div class="flex-1"><label class="block text-[10px] text-slate-500 font-bold mb-1">สีตัวอักษร</label><input type="color" value="${item.badgeTextColor}" onchange="tempConfig.newsItems[${realIdx}].badgeTextColor=this.value" class="h-8 w-full border rounded cursor-pointer"></div></div>
+                                <div class="flex gap-2 pt-6"><div class="flex-1"><label class="block text-[10px] text-slate-500 font-bold mb-1">สีข้อความ</label><input type="color" value="${item.textColor}" onchange="tempConfig.newsItems[${realIdx}].textColor=this.value" class="h-8 w-full border rounded cursor-pointer"></div><div class="flex-[1.5]"><label class="block text-[10px] text-slate-500 font-bold mb-1">วันที่</label><input type="date" value="${item.date}" onchange="tempConfig.newsItems[${realIdx}].date=this.value" class="w-full p-1 text-xs border rounded"></div></div>
                             </div>
                         </div>
                     </div>`;
