@@ -103,7 +103,7 @@
                         if (doc.exists) {
                             const newData = doc.data();
                             
-                            // Check for New News Notification
+                            // Check for New News Notification (Online Trigger)
                             checkAndNotifyNews(newData.newsItems || []);
                             
                             appConfig = newData;
@@ -135,7 +135,7 @@
             } catch (error) { console.error("Firebase Init Error:", error); }
         }
 
-        // --- NOTIFICATION LOGIC ---
+        // --- NOTIFICATION LOGIC (IMPROVED V26) ---
         function requestNotificationPermission() {
             if (!("Notification" in window)) {
                 alert("อุปกรณ์นี้ไม่รองรับการแจ้งเตือน");
@@ -145,10 +145,17 @@
                 if (permission === "granted") {
                     showToast("เปิดการแจ้งเตือนแล้ว");
                     // Test notification
-                    new Notification("SUNNY Stock", { body: "ระบบพร้อมแจ้งเตือนประกาศใหม่ครับ", icon: "https://cdn-icons-png.flaticon.com/512/1063/1063376.png" });
+                    try {
+                        new Notification("SUNNY Stock", { body: "ระบบพร้อมแจ้งเตือนประกาศใหม่ครับ", icon: "https://cdn-icons-png.flaticon.com/512/1063/1063376.png" });
+                    } catch(e) {
+                        console.warn("Notification error:", e);
+                    }
+                } else if (permission === "denied") {
+                    alert("คุณปิดกั้นการแจ้งเตือนไว้ กรุณาไปที่ตั้งค่าของเบราว์เซอร์เพื่ออนุญาต");
                 } else {
-                    alert("กรุณากดอนุญาต (Allow) การแจ้งเตือนในการตั้งค่าเบราว์เซอร์");
+                    alert("กรุณากดอนุญาต (Allow) เพื่อรับการแจ้งเตือน");
                 }
+                renderSidebar(); // Update button state
             });
         }
 
@@ -169,11 +176,19 @@
                         new Notification("ประกาศใหม่: " + latest.badgeLabel, {
                             body: latest.text,
                             icon: "https://cdn-icons-png.flaticon.com/512/1063/1063376.png",
-                            tag: "sunny-news"
+                            tag: "sunny-news" // Prevents duplicate notifications
                         });
-                    } catch (e) { console.log("Notify Error", e); }
+                    } catch (e) { 
+                        console.log("Notify Error", e);
+                        // Fallback: Show Toast if notification fails (e.g. Android PWA without WebAPK)
+                        showToast("ประกาศใหม่: " + latest.text);
+                    }
+                } else {
+                    // Fallback if permission not granted yet
+                     console.log("Notification permission not granted");
                 }
-                // Update LocalStorage
+                
+                // Update LocalStorage to avoid repeating
                 localStorage.setItem('last_notified_news_id', latest.id);
             }
         }
@@ -273,7 +288,7 @@
             <!-- Notification Request Button -->
             <button onclick="requestNotificationPermission()" class="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-3 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                เปิดแจ้งเตือนประกาศ
+                <span id="notifBtnText">เปิดแจ้งเตือนประกาศ</span>
             </button>
 
             <button onclick="toggleHelpModal(true)" class="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-600 py-3 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors">
@@ -543,6 +558,7 @@
         <div class="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-6 relative animate-fade-in-up max-h-[90vh] overflow-y-auto">
              <button onclick="toggleHelpModal(false)" class="absolute top-4 right-4 bg-slate-50 p-2 rounded-full hover:bg-slate-100 text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
              <h3 class="text-xl font-bold text-slate-800 mb-4">วิธีใช้งาน</h3>
+             <!-- Re-inserting original V13 detailed help content here based on user request -->
              <div class="space-y-4 text-sm text-slate-600">
                 <!-- Search -->
                 <ul class="space-y-2 list-disc pl-4">
@@ -619,7 +635,7 @@
                  <li class="pt-4 font-bold text-slate-700 border-t border-slate-200 mt-4">เมนูคำนวณราคา:</li>
                  <ul class="list-none pl-2 space-y-1 text-xs text-slate-500">
                     <li>🪟 <strong>ภายนอก:</strong> คิดค่าอุปกรณ์ 1,956 + รางบน/ล่าง + สลิง</li>
-                    <li>🏠 <strong>ม่านม้วน:</strong> คิดเฉพาะค่าผ้าตามพื้นที่ (ขั้นต่ำ 1.2 ตร.ม.)</li>
+                    <li>🏠 <strong>ม่านม้วน:</strong> คิดเฉพาะค่าผ้าตามพื้นที่ (ขั้นต่ำ 1.2 ตร.ล.)</li>
                  </ul>
              </div>
              <button onclick="toggleHelpModal(false)" class="mt-6 w-full bg-slate-900 text-white py-3 rounded-xl font-bold">ตกลง</button>
@@ -1030,7 +1046,15 @@
 
             appConfig = tempConfig;
             if (isOnlineMode) db.collection("app_settings").doc("config").set(appConfig).then(() => { showToast("บันทึกสำเร็จ"); closeConfig(); renderSidebar(); });
-            else { localStorage.setItem('sunny_app_config', JSON.stringify(appConfig)); renderSidebar(); renderNews(); switchSystem(currentSystem); showToast("บันทึก(Offline)สำเร็จ"); closeConfig(); }
+            else { 
+                localStorage.setItem('sunny_app_config', JSON.stringify(appConfig)); 
+                renderSidebar(); 
+                renderNews(); 
+                switchSystem(currentSystem); 
+                checkAndNotifyNews(appConfig.newsItems); // Force check notification in Offline Mode
+                showToast("บันทึก(Offline)สำเร็จ"); 
+                closeConfig(); 
+            }
         }
 
         // --- RENDER SIDEBAR (RESTORING THIS CRITICAL FUNCTION) ---
