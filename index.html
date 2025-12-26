@@ -1332,12 +1332,14 @@
                 let emojiGridBadge = EMOJI_LIST.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'badge')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
                 
                 // Toolbar Button Helper with Select for Font Size
+                // FIXED: Removed global onmousedown="event.preventDefault()" from the parent div
+                // Added it individually to buttons to prevent focus loss, but allowed select to work
                 const createToolbar = (type) => `
-                    <div class="flex gap-1 mb-1.5 flex-wrap items-center" onmousedown="event.preventDefault()">
-                        <button onclick="execCmd('bold')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">B</button>
-                        <button onclick="execCmd('italic')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] italic hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">I</button>
-                        <button onclick="execCmd('underline')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] underline hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">U</button>
-                        <button onclick="execCmd('strikeThrough')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] line-through hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">S</button>
+                    <div class="flex gap-1 mb-1.5 flex-wrap items-center">
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('bold')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">B</button>
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('italic')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] italic hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">I</button>
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('underline')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] underline hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">U</button>
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('strikeThrough')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] line-through hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">S</button>
                         <div class="w-px h-6 bg-slate-200 mx-1"></div>
                         
                         <!-- Font Size Select -->
@@ -1353,7 +1355,7 @@
                         </select>
 
                         <div class="w-px h-6 bg-slate-200 mx-1"></div>
-                        <button onclick="document.getElementById('emoji-picker-${type === 'badge' ? 'badge-' : ''}${realIdx}').classList.toggle('hidden')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50 hover:text-sunny-red">😀</button>
+                        <button onmousedown="event.preventDefault()" onclick="document.getElementById('emoji-picker-${type === 'badge' ? 'badge-' : ''}${realIdx}').classList.toggle('hidden')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50 hover:text-sunny-red">😀</button>
                     </div>
                 `;
 
