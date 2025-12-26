@@ -12,7 +12,7 @@
     <!-- PWA Manifest (Android/Chrome) -->
     <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiU1VOTlkgU3RvY2sgU3lzdGVtIiwic2hvcnRfbmFtZSI6IlNVTk5ZIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiNFNjM5NDYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9jZG4taWNvbnS1wbmcuZmxhdGljb24uY29tLzUxMi8xMDYzLzEwNjMzNzYucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
     
-    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY (V9 Features)</title>
+    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY (V10 Header Image)</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iI0U2Mzk0NiIgcng9IjgwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zdHlsZT0iaXRhbGljIiBmb250LXNpemU9IjM1MCI+UzwvdGV4dD48L3N2Zz4=">
@@ -63,10 +63,10 @@
             appTitle: "SUNNY",
             theme: 'default', // default, christmas
             menus: [
-                { id: 'WOOD', name: 'มู่ลี่ไม้', sub: '', icon: 'wood', active: true },
-                { id: 'ALU', name: 'มู่ลี่อลูมิเนียม', sub: '25mm.', icon: 'alu', active: true },
-                { id: 'PVC', name: 'ฉาก PVC', sub: '(ใบ 8.5/10 cm)', icon: 'pvc', active: true },
-                { id: 'ROLLER', name: 'ม่านม้วน', sub: '', icon: 'roller', active: true }
+                { id: 'WOOD', name: 'มู่ลี่ไม้', sub: '', icon: 'wood', active: true, bgImage: '' },
+                { id: 'ALU', name: 'มู่ลี่อลูมิเนียม', sub: '25mm.', icon: 'alu', active: true, bgImage: '' },
+                { id: 'PVC', name: 'ฉาก PVC', sub: '(ใบ 8.5/10 cm)', icon: 'pvc', active: true, bgImage: '' },
+                { id: 'ROLLER', name: 'ม่านม้วน', sub: '', icon: 'roller', active: true, bgImage: '' }
             ],
             newsSettings: { speed: 3, showDate: true },
             newsItems: [],
@@ -81,7 +81,7 @@
                     sling: 69           
                 }
             },
-            features: { // New Feature Flags System
+            features: {
                 experimental_mode: false
             }
         };
@@ -138,6 +138,10 @@
                             renderSidebar();
                             renderNews();
                             applyTheme(appConfig.theme); // Apply theme on load
+                            
+                            // Apply current system background if loaded
+                            if(currentSystem) switchSystem(currentSystem);
+
                         } else {
                             db.collection("app_settings").doc("config").set(appConfig);
                         }
@@ -146,10 +150,10 @@
             } catch (error) { console.error("Firebase Init Error:", error); }
         }
 
-        // --- THEME LOGIC (V8 NIGHT THEME) ---
+        // --- THEME LOGIC ---
         function applyTheme(theme) {
             const body = document.body;
-            body.classList.remove('theme-christmas'); // Clean start
+            body.classList.remove('theme-christmas');
             
             let primary = '#E63946';
             let dark = '#1D3557';
@@ -157,8 +161,8 @@
             
             if (theme === 'christmas') {
                 body.classList.add('theme-christmas');
-                primary = '#D62828'; // Vibrant Christmas Red
-                dark = '#003049';    // Prussian Blue
+                primary = '#D62828';
+                dark = '#003049';
                 showScene = 'block';
             }
 
@@ -217,6 +221,26 @@
         /* Default Pattern */
         .wooden-pattern { background-image: repeating-linear-gradient(180deg, rgba(210, 180, 140, 0.05) 0px, rgba(210, 180, 140, 0.05) 15px, rgba(0, 0, 0, 0.02) 16px, transparent 16px, transparent 24px); }
         
+        /* Custom Header Background Class */
+        .header-custom-bg {
+            background-size: cover;
+            background-position: center 30%; /* Focus a bit higher than center */
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        /* Overlay to ensure text readability on custom images */
+        .header-custom-bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%);
+            border-radius: 2rem; /* Match header border radius */
+            pointer-events: none;
+            z-index: 0;
+        }
+        /* Ensure content is above overlay */
+        #headerSection > div.relative { z-index: 10; }
+
         .bento-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .bento-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1); }
         .fade-in-up { animation: fadeInUp 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); }
@@ -241,16 +265,13 @@
         [contenteditable]:empty:before { content: attr(placeholder); color: #9ca3af; display: block; }
 
         /* =========================================
-           THEME: CHRISTMAS NIGHT (V8)
+           THEME: CHRISTMAS NIGHT
            ========================================= */
         body.theme-christmas {
-            /* Night Sky Gradient */
             background: linear-gradient(to bottom, #0f172a 0%, #1e3a8a 60%, #172554 100%) !important;
             background-attachment: fixed !important;
             color: #1e293b;
         }
-
-        /* Star Twinkle Animation */
         body.theme-christmas::before {
             content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1;
             background-image: 
@@ -266,8 +287,8 @@
         }
         @keyframes twinkle { from { opacity: 0.3; } to { opacity: 0.8; } }
 
-        /* Christmas Header Override */
-        body.theme-christmas #headerSection {
+        /* Christmas Header Override - Only if NO custom image */
+        body.theme-christmas #headerSection:not(.header-custom-bg) {
             background: rgba(255, 255, 255, 0.95) !important;
             border: 2px solid #D62828 !important;
             box-shadow: 0 0 20px rgba(214, 40, 40, 0.3) !important;
@@ -275,71 +296,38 @@
         }
         body.theme-christmas .wooden-pattern { background-image: none !important; }
 
-        /* Bento Grid Decoration (Christmas Lights & Reindeer) */
+        /* Bento Grid Decoration */
         body.theme-christmas .bento-card {
-            background: rgba(255, 255, 255, 0.92) !important; /* White Glass */
+            background: rgba(255, 255, 255, 0.92) !important;
             border: 1px solid rgba(255, 255, 255, 0.5) !important;
-            overflow: visible !important; /* Allow Reindeer to peek out */
-            margin-top: 5px; /* Space for lights */
+            overflow: visible !important;
+            margin-top: 5px;
         }
-        /* Colorful Lights on Top Edge */
         body.theme-christmas .bento-card::before {
             content: ''; position: absolute; top: -4px; left: 0; right: 0; height: 4px;
-            background-image: linear-gradient(90deg, 
-                #ef4444 0%, #ef4444 20%, 
-                #22c55e 20%, #22c55e 40%, 
-                #fbbf24 40%, #fbbf24 60%, 
-                #3b82f6 60%, #3b82f6 80%, 
-                #ef4444 80%, #ef4444 100%);
+            background-image: linear-gradient(90deg, #ef4444 0%, #ef4444 20%, #22c55e 20%, #22c55e 40%, #fbbf24 40%, #fbbf24 60%, #3b82f6 60%, #3b82f6 80%, #ef4444 80%, #ef4444 100%);
             background-size: 20px 4px;
             border-radius: 4px 4px 0 0;
             opacity: 0.8;
         }
-        /* Reindeer Icon on Corner */
         body.theme-christmas .bento-card::after {
-            content: '🦌';
-            position: absolute;
-            top: -12px;
-            right: -5px;
-            font-size: 18px;
-            transform: rotate(10deg);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+            content: '🦌'; position: absolute; top: -12px; right: -5px; font-size: 18px; transform: rotate(10deg);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1); filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
         }
 
-        /* --- XMAS SCENE CONTAINER (Bottom Fixed) --- */
+        /* XMAS SCENE */
         #xmas-scene {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 180px;
-            pointer-events: none; z-index: 0; /* Behind main content if possible, but visible */
-            display: none; /* Controlled by JS */
-            overflow: hidden;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 180px; pointer-events: none; z-index: 0; display: none; overflow: hidden;
         }
-        
-        /* Snow Ground */
         #xmas-scene .ground {
             position: absolute; bottom: -20px; left: -10%; width: 120%; height: 60px;
-            background: linear-gradient(to top, #e2e8f0, #f8fafc);
-            border-radius: 50% 50% 0 0;
-            box-shadow: 0 -5px 15px rgba(255,255,255,0.2);
+            background: linear-gradient(to top, #e2e8f0, #f8fafc); border-radius: 50% 50% 0 0; box-shadow: 0 -5px 15px rgba(255,255,255,0.2);
         }
-
-        /* Elements */
         .scene-el { position: absolute; bottom: 25px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3)); font-size: 40px; }
-        
-        /* Tree */
         .el-tree { left: 10px; font-size: 80px !important; bottom: 20px !important; z-index: 2; transform: scale(1.1); }
-        
-        /* Santa Sitting */
-        .el-santa { left: 90px; bottom: 30px !important; font-size: 50px !important; z-index: 3; transform: scaleX(-1); /* Face right */ }
-        
-        /* Bonfire with Animation */
-        .el-fire { 
-            left: 140px; bottom: 25px !important; font-size: 35px !important; z-index: 3;
-            animation: fireFlicker 1s infinite alternate;
-        }
+        .el-santa { left: 90px; bottom: 30px !important; font-size: 50px !important; z-index: 3; transform: scaleX(-1); }
+        .el-fire { left: 140px; bottom: 25px !important; font-size: 35px !important; z-index: 3; animation: fireFlicker 1s infinite alternate; }
         @keyframes fireFlicker { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.1); opacity: 1; filter: brightness(1.2); } }
-
-        /* Snowman */
         .el-snowman { right: 20px; bottom: 30px !important; font-size: 60px !important; z-index: 2; animation: snowBob 3s infinite ease-in-out; }
         @keyframes snowBob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(2deg); } }
 
@@ -439,7 +427,7 @@
         <div class="p-4 pt-16 md:p-8 pb-40 max-w-6xl mx-auto space-y-6">
             
             <!-- Header Section -->
-            <div id="headerSection" class="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-100 wooden-pattern relative overflow-hidden hover:shadow-lg transition-shadow duration-300">
+            <div id="headerSection" class="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-100 wooden-pattern relative overflow-hidden hover:shadow-lg transition-all duration-500 ease-in-out">
                 <div class="absolute top-0 right-0 w-48 h-48 bg-red-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-60 pointer-events-none"></div>
                 <div class="relative z-10">
                     <h2 id="systemTitle" class="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">ระบบเช็คสต็อก</h2>
@@ -1268,7 +1256,20 @@
             
             // 1. Stock Menus
             tempConfig.menus.forEach((menu, idx) => {
-                list.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-3"><div class="p-2 bg-slate-100 rounded text-slate-500">${ICONS[menu.icon]}</div><div class="flex-grow space-y-1"><input type="text" value="${menu.name}" onchange="tempConfig.menus[${idx}].name=this.value" class="w-full p-1 border rounded text-sm font-bold"><input type="text" value="${menu.sub}" onchange="tempConfig.menus[${idx}].sub=this.value" class="w-full p-1 border rounded text-xs text-slate-500"></div><input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red"></div>`;
+                list.innerHTML += `
+                <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-slate-100 rounded text-slate-500">${ICONS[menu.icon]}</div>
+                        <div class="flex-grow space-y-1">
+                            <input type="text" value="${menu.name}" onchange="tempConfig.menus[${idx}].name=this.value" class="w-full p-1 border rounded text-sm font-bold">
+                            <input type="text" value="${menu.sub}" onchange="tempConfig.menus[${idx}].sub=this.value" class="w-full p-1 border rounded text-xs text-slate-500">
+                        </div>
+                        <input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red">
+                    </div>
+                    <div>
+                        <input type="text" value="${menu.bgImage || ''}" onchange="tempConfig.menus[${idx}].bgImage=this.value" class="w-full p-2 border rounded text-xs text-slate-600 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-sunny-red" placeholder="URL รูปพื้นหลัง... (ว่างไว้ถ้าไม่ใช้)">
+                    </div>
+                </div>`;
             });
 
             // 2. Separator & Calculator Toggle
@@ -1493,6 +1494,22 @@
                     </a>
                 `;
             }
+
+            // ============================================================
+            //  EXAMPLE FEATURE FLAG: Secret Menu
+            //  วิธีทดสอบ: ไปที่ Admin > Tab Features > เพิ่ม key ชื่อ "secret_menu" > เปิด On
+            // ============================================================
+            if (appConfig.features['secret_menu']) {
+                container.innerHTML += `
+                    <div class="mt-4 border-t border-dashed border-purple-200 mx-6 pt-4"></div>
+                    <div class="px-6 mb-2 text-xs font-bold text-purple-500 uppercase tracking-wider animate-pulse">✨ Beta Features</div>
+                    <a href="#" onclick="alert('ยินดีต้อนรับสู่ฟีเจอร์ลับ! คุณเปิดใช้งาน Feature Flag สำเร็จแล้ว')" class="group flex items-center px-6 py-3 text-purple-600 bg-purple-50 hover:bg-purple-100 transition-all rounded-r-full mr-4 border-l-4 border-purple-500">
+                        <div class="w-8 flex justify-center mr-2 text-lg">🚀</div>
+                        <span class="font-bold">เมนูลับทดสอบ</span>
+                    </a>
+                `;
+            }
+
             document.getElementById('app-title-display').innerText = appConfig.appTitle;
             
             // Show/Hide PWA Install Button
@@ -1541,8 +1558,23 @@
             document.getElementById('calculatorSection').classList.add('hidden');
             const menu = appConfig.menus.find(m => m.id === system);
             if(!menu) return;
+            
             document.getElementById('systemTitle').innerText = "ระบบเช็คสต็อก " + menu.name;
             document.getElementById('productTypeLabel').innerText = menu.name;
+            
+            // --- HEADER BACKGROUND LOGIC (NEW) ---
+            const header = document.getElementById('headerSection');
+            if (menu.bgImage && menu.bgImage.trim() !== '') {
+                header.style.backgroundImage = `url('${menu.bgImage}')`;
+                header.classList.add('header-custom-bg');
+                header.classList.remove('wooden-pattern');
+            } else {
+                header.style.backgroundImage = '';
+                header.classList.remove('header-custom-bg');
+                header.classList.add('wooden-pattern');
+            }
+            // -------------------------------------
+
             document.getElementById('productCodeInput').value = '';
             document.getElementById('productCodeInput').placeholder = system==='WOOD'?'เช่น B35-34...':system==='PVC'?'เช่น 926...':system==='ALU'?'เช่น 001...':'เช่น SZH...';
             document.getElementById('productCard').classList.add('hidden');
