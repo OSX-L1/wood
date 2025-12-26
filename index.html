@@ -12,7 +12,7 @@
     <!-- PWA Manifest (Android/Chrome) -->
     <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiU1VOTlkgU3RvY2sgU3lzdGVtIiwic2hvcnRfbmFtZSI6IlNVTk5ZIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiNFNjM5NDYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9jZG4taWNvbnS1wbmcuZmxhdGljb24uY29tLzUxMi8xMDYzLzEwNjMzNzYucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
     
-    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY (V3)</title>
+    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY (V9 Features)</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iI0U2Mzk0NiIgcng9IjgwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zdHlsZT0iaXRhbGljIiBmb250LXNpemU9IjM1MCI+UzwvdGV4dD48L3N2Zz4=">
@@ -61,6 +61,7 @@
         // ค่าเริ่มต้น
         const DEFAULT_CONFIG = {
             appTitle: "SUNNY",
+            theme: 'default', // default, christmas
             menus: [
                 { id: 'WOOD', name: 'มู่ลี่ไม้', sub: '', icon: 'wood', active: true },
                 { id: 'ALU', name: 'มู่ลี่อลูมิเนียม', sub: '25mm.', icon: 'alu', active: true },
@@ -79,16 +80,22 @@
                     railBot: 150,       
                     sling: 69           
                 }
+            },
+            features: { // New Feature Flags System
+                experimental_mode: false
             }
         };
         
         let appConfig = JSON.parse(localStorage.getItem('sunny_app_config')) || DEFAULT_CONFIG;
         if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
+        if(!appConfig.theme) appConfig.theme = 'default';
+        if(!appConfig.features) appConfig.features = DEFAULT_CONFIG.features;
 
         // --- Initialize Firebase ---
         function initFirebase() {
             if (firebaseConfig.apiKey === "YOUR_API_KEY") {
                 console.warn("Offline Mode (No Config)");
+                applyTheme(appConfig.theme);
                 return;
             }
             try {
@@ -102,12 +109,11 @@
                     db.collection("app_settings").doc("config").onSnapshot((doc) => {
                         if (doc.exists) {
                             const newData = doc.data();
-                            
-                            // Check for New News Notification (Online Trigger)
                             checkAndNotifyNews(newData.newsItems || []);
                             
                             appConfig = newData;
-                            // Data Migration checks...
+                            
+                            // Data Migration
                             if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
                             const defaults = DEFAULT_CONFIG.calcSettings.factors;
                             if(!appConfig.calcSettings.factors) appConfig.calcSettings.factors = defaults;
@@ -117,6 +123,10 @@
                                 }
                             }
                             if(!appConfig.newsItems) appConfig.newsItems = [];
+                            if(!appConfig.theme) appConfig.theme = 'default';
+                            if(!appConfig.features) appConfig.features = DEFAULT_CONFIG.features;
+
+                            // Standardize news colors
                             appConfig.newsItems.forEach(item => {
                                 if(!item.badgeLabel) item.badgeLabel = "NEW!";
                                 if(!item.badgeColor) item.badgeColor = "#E63946";
@@ -126,7 +136,8 @@
 
                             localStorage.setItem('sunny_app_config', JSON.stringify(appConfig));
                             renderSidebar();
-                            renderNews(); 
+                            renderNews();
+                            applyTheme(appConfig.theme); // Apply theme on load
                         } else {
                             db.collection("app_settings").doc("config").set(appConfig);
                         }
@@ -135,60 +146,52 @@
             } catch (error) { console.error("Firebase Init Error:", error); }
         }
 
-        // --- NOTIFICATION LOGIC (IMPROVED V26) ---
-        function requestNotificationPermission() {
-            if (!("Notification" in window)) {
-                alert("อุปกรณ์นี้ไม่รองรับการแจ้งเตือน");
-                return;
+        // --- THEME LOGIC (V8 NIGHT THEME) ---
+        function applyTheme(theme) {
+            const body = document.body;
+            body.classList.remove('theme-christmas'); // Clean start
+            
+            let primary = '#E63946';
+            let dark = '#1D3557';
+            let showScene = 'none';
+            
+            if (theme === 'christmas') {
+                body.classList.add('theme-christmas');
+                primary = '#D62828'; // Vibrant Christmas Red
+                dark = '#003049';    // Prussian Blue
+                showScene = 'block';
             }
+
+            const scene = document.getElementById('xmas-scene');
+            if(scene) scene.style.display = showScene;
+
+            document.querySelector('meta[name="theme-color"]').setAttribute("content", primary);
+            document.documentElement.style.setProperty('--sunny-red', primary);
+            document.documentElement.style.setProperty('--sunny-dark', dark);
+        }
+
+        // --- NOTIFICATION LOGIC ---
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) { alert("อุปกรณ์นี้ไม่รองรับการแจ้งเตือน"); return; }
             Notification.requestPermission().then(permission => {
                 if (permission === "granted") {
                     showToast("เปิดการแจ้งเตือนแล้ว");
-                    // Test notification
-                    try {
-                        new Notification("SUNNY Stock", { body: "ระบบพร้อมแจ้งเตือนประกาศใหม่ครับ", icon: "https://cdn-icons-png.flaticon.com/512/1063/1063376.png" });
-                    } catch(e) {
-                        console.warn("Notification error:", e);
-                    }
-                } else if (permission === "denied") {
-                    alert("คุณปิดกั้นการแจ้งเตือนไว้ กรุณาไปที่ตั้งค่าของเบราว์เซอร์เพื่ออนุญาต");
-                } else {
-                    alert("กรุณากดอนุญาต (Allow) เพื่อรับการแจ้งเตือน");
-                }
-                renderSidebar(); // Update button state
+                    try { new Notification("SUNNY Stock", { body: "ระบบพร้อมแจ้งเตือนประกาศใหม่ครับ", icon: "https://cdn-icons-png.flaticon.com/512/1063/1063376.png" }); } catch(e) {}
+                } else if (permission === "denied") { alert("คุณปิดกั้นการแจ้งเตือนไว้ กรุณาไปที่ตั้งค่าของเบราว์เซอร์เพื่ออนุญาต"); } 
+                else { alert("กรุณากดอนุญาต (Allow) เพื่อรับการแจ้งเตือน"); }
+                renderSidebar(); 
             });
         }
-
         function checkAndNotifyNews(newsItems) {
             if (!newsItems || newsItems.length === 0) return;
-
-            // Sort by ID (Timestamp) descending to get latest
             const latest = [...newsItems].sort((a,b) => b.id - a.id)[0];
             if (!latest) return;
-
             const lastSeenId = parseInt(localStorage.getItem('last_notified_news_id') || '0');
-
-            // If there is a newer news item than last seen
             if (latest.id > lastSeenId) {
-                // Trigger Notification
                 if (Notification.permission === "granted") {
-                    try {
-                        new Notification("ประกาศใหม่: " + latest.badgeLabel, {
-                            body: latest.text,
-                            icon: "https://cdn-icons-png.flaticon.com/512/1063/1063376.png",
-                            tag: "sunny-news" // Prevents duplicate notifications
-                        });
-                    } catch (e) { 
-                        console.log("Notify Error", e);
-                        // Fallback: Show Toast if notification fails (e.g. Android PWA without WebAPK)
-                        showToast("ประกาศใหม่: " + latest.text);
-                    }
-                } else {
-                    // Fallback if permission not granted yet
-                     console.log("Notification permission not granted");
+                    try { new Notification("ประกาศใหม่: " + latest.badgeLabel, { body: latest.text, icon: "https://cdn-icons-png.flaticon.com/512/1063/1063376.png", tag: "sunny-news" }); } 
+                    catch (e) { showToast("ประกาศใหม่: " + latest.text); }
                 }
-                
-                // Update LocalStorage to avoid repeating
                 localStorage.setItem('last_notified_news_id', latest.id);
             }
         }
@@ -197,15 +200,23 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Sarabun', 'Inter', 'sans-serif'] },
-                    colors: { 'sunny-red': '#E63946', 'sunny-dark': '#1D3557', 'sunny-bg': '#F1FAEE' }
+                    colors: { 
+                        'sunny-red': 'var(--sunny-red)', 
+                        'sunny-dark': 'var(--sunny-dark)', 
+                        'sunny-bg': '#F1FAEE' 
+                    }
                 }
             }
         }
     </script>
     <style>
-        .loader { border-top-color: #E63946; animation: spin 1s infinite linear; }
+        :root { --sunny-red: #E63946; --sunny-dark: #1D3557; }
+        .loader { border-top-color: var(--sunny-red); animation: spin 1s infinite linear; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Default Pattern */
         .wooden-pattern { background-image: repeating-linear-gradient(180deg, rgba(210, 180, 140, 0.05) 0px, rgba(210, 180, 140, 0.05) 15px, rgba(0, 0, 0, 0.02) 16px, transparent 16px, transparent 24px); }
+        
         .bento-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .bento-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1); }
         .fade-in-up { animation: fadeInUp 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); }
@@ -221,21 +232,116 @@
         .toast-show { animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         .toast-hide { animation: fadeOut 0.5s forwards; }
 
-        /* Custom Scrollbar for Emoji Picker */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #bbb; }
 
-        /* Smooth Ripple for Buttons */
         .btn-bounce:active { transform: scale(0.95); }
-        
-        /* Content Editable Placeholder */
-        [contenteditable]:empty:before {
-            content: attr(placeholder);
-            color: #9ca3af;
-            display: block; /* For Firefox */
+        [contenteditable]:empty:before { content: attr(placeholder); color: #9ca3af; display: block; }
+
+        /* =========================================
+           THEME: CHRISTMAS NIGHT (V8)
+           ========================================= */
+        body.theme-christmas {
+            /* Night Sky Gradient */
+            background: linear-gradient(to bottom, #0f172a 0%, #1e3a8a 60%, #172554 100%) !important;
+            background-attachment: fixed !important;
+            color: #1e293b;
         }
+
+        /* Star Twinkle Animation */
+        body.theme-christmas::before {
+            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1;
+            background-image: 
+                radial-gradient(1px 1px at 10% 10%, white, transparent),
+                radial-gradient(1px 1px at 20% 40%, white, transparent),
+                radial-gradient(2px 2px at 40% 20%, white, transparent),
+                radial-gradient(1px 1px at 60% 70%, white, transparent),
+                radial-gradient(2px 2px at 80% 30%, white, transparent),
+                radial-gradient(1px 1px at 90% 80%, white, transparent);
+            background-size: 300px 300px;
+            animation: twinkle 5s linear infinite alternate;
+            opacity: 0.6;
+        }
+        @keyframes twinkle { from { opacity: 0.3; } to { opacity: 0.8; } }
+
+        /* Christmas Header Override */
+        body.theme-christmas #headerSection {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 2px solid #D62828 !important;
+            box-shadow: 0 0 20px rgba(214, 40, 40, 0.3) !important;
+            backdrop-filter: blur(10px);
+        }
+        body.theme-christmas .wooden-pattern { background-image: none !important; }
+
+        /* Bento Grid Decoration (Christmas Lights & Reindeer) */
+        body.theme-christmas .bento-card {
+            background: rgba(255, 255, 255, 0.92) !important; /* White Glass */
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            overflow: visible !important; /* Allow Reindeer to peek out */
+            margin-top: 5px; /* Space for lights */
+        }
+        /* Colorful Lights on Top Edge */
+        body.theme-christmas .bento-card::before {
+            content: ''; position: absolute; top: -4px; left: 0; right: 0; height: 4px;
+            background-image: linear-gradient(90deg, 
+                #ef4444 0%, #ef4444 20%, 
+                #22c55e 20%, #22c55e 40%, 
+                #fbbf24 40%, #fbbf24 60%, 
+                #3b82f6 60%, #3b82f6 80%, 
+                #ef4444 80%, #ef4444 100%);
+            background-size: 20px 4px;
+            border-radius: 4px 4px 0 0;
+            opacity: 0.8;
+        }
+        /* Reindeer Icon on Corner */
+        body.theme-christmas .bento-card::after {
+            content: '🦌';
+            position: absolute;
+            top: -12px;
+            right: -5px;
+            font-size: 18px;
+            transform: rotate(10deg);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+        }
+
+        /* --- XMAS SCENE CONTAINER (Bottom Fixed) --- */
+        #xmas-scene {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 180px;
+            pointer-events: none; z-index: 0; /* Behind main content if possible, but visible */
+            display: none; /* Controlled by JS */
+            overflow: hidden;
+        }
+        
+        /* Snow Ground */
+        #xmas-scene .ground {
+            position: absolute; bottom: -20px; left: -10%; width: 120%; height: 60px;
+            background: linear-gradient(to top, #e2e8f0, #f8fafc);
+            border-radius: 50% 50% 0 0;
+            box-shadow: 0 -5px 15px rgba(255,255,255,0.2);
+        }
+
+        /* Elements */
+        .scene-el { position: absolute; bottom: 25px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3)); font-size: 40px; }
+        
+        /* Tree */
+        .el-tree { left: 10px; font-size: 80px !important; bottom: 20px !important; z-index: 2; transform: scale(1.1); }
+        
+        /* Santa Sitting */
+        .el-santa { left: 90px; bottom: 30px !important; font-size: 50px !important; z-index: 3; transform: scaleX(-1); /* Face right */ }
+        
+        /* Bonfire with Animation */
+        .el-fire { 
+            left: 140px; bottom: 25px !important; font-size: 35px !important; z-index: 3;
+            animation: fireFlicker 1s infinite alternate;
+        }
+        @keyframes fireFlicker { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.1); opacity: 1; filter: brightness(1.2); } }
+
+        /* Snowman */
+        .el-snowman { right: 20px; bottom: 30px !important; font-size: 60px !important; z-index: 2; animation: snowBob 3s infinite ease-in-out; }
+        @keyframes snowBob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(2deg); } }
 
         @media print {
             body * { visibility: hidden; }
@@ -251,6 +357,15 @@
     <div id="intro-splash" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-700 ease-out">
         <h1 class="text-6xl font-black text-sunny-red italic tracking-tighter">SUNNY</h1>
         <p class="text-sm font-bold text-slate-400 mt-4 tracking-widest">STOCK SYSTEM</p>
+    </div>
+
+    <!-- XMAS SCENE LAYER -->
+    <div id="xmas-scene">
+        <div class="ground"></div>
+        <div class="scene-el el-tree">🎄</div>
+        <div class="scene-el el-santa">🎅</div>
+        <div class="scene-el el-fire">🔥</div>
+        <div class="scene-el el-snowman">⛄</div>
     </div>
 
     <!-- Toast Notification -->
@@ -501,8 +616,10 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-200 overflow-x-auto">
             <button onclick="switchAdminTab('menu')" id="tab-btn-menu" class="px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap">เมนูสินค้า</button>
+            <button onclick="switchAdminTab('theme')" id="tab-btn-theme" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ตั้งค่าธีม</button>
             <button onclick="switchAdminTab('news')" id="tab-btn-news" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ข่าวสาร</button>
             <button onclick="switchAdminTab('calc')" id="tab-btn-calc" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ตั้งค่าคำนวณ</button>
+            <button onclick="switchAdminTab('features')" id="tab-btn-features" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg> ฟีเจอร์ (Dev)</button>
             <button onclick="switchAdminTab('saved')" id="tab-btn-saved" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ประวัติใบเสนอราคา</button>
         </div>
 
@@ -512,6 +629,60 @@
             <div id="tab-content-menu" class="space-y-6">
                 <div class="space-y-2"><label class="block text-sm font-bold text-slate-700">ชื่อแอป</label><input type="text" id="conf-app-title" class="w-full p-3 border rounded-xl bg-white"></div>
                 <div class="space-y-4"><h4 class="font-bold text-slate-800">จัดการเมนูสินค้า</h4><div id="admin-menu-list" class="space-y-4"></div></div>
+            </div>
+
+             <!-- Tab: Theme Config -->
+             <div id="tab-content-theme" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h4 class="font-bold text-slate-800">เลือกธีมของระบบ</h4>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Default Theme -->
+                        <label class="cursor-pointer">
+                            <input type="radio" name="app-theme" value="default" class="peer sr-only" onchange="previewTheme('default')">
+                            <div class="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-sunny-red peer-checked:bg-red-50 transition-all text-center h-full hover:shadow-md">
+                                <div class="w-12 h-12 rounded-full bg-[#E63946] mx-auto mb-3 shadow-sm border-2 border-white ring-1 ring-slate-100"></div>
+                                <h5 class="font-bold text-slate-700">มาตรฐาน</h5>
+                                <p class="text-xs text-slate-400 mt-1">โทนสีส้มแดง-น้ำเงิน เรียบง่าย</p>
+                            </div>
+                        </label>
+
+                        <!-- Christmas Theme -->
+                        <label class="cursor-pointer">
+                            <input type="radio" name="app-theme" value="christmas" class="peer sr-only" onchange="previewTheme('christmas')">
+                            <div class="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-green-600 peer-checked:bg-green-50 transition-all text-center h-full hover:shadow-md relative overflow-hidden">
+                                <div class="absolute -top-2 -right-2 text-3xl opacity-20">❄️</div>
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#D42426] to-[#165B33] mx-auto mb-3 shadow-sm border-2 border-white ring-1 ring-slate-100 flex items-center justify-center text-white text-lg">🎄</div>
+                                <h5 class="font-bold text-slate-700">คริสต์มาส</h5>
+                                <p class="text-xs text-slate-400 mt-1">โทนแดง-เขียว พร้อมหิมะตก</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="text-xs text-slate-400 bg-slate-50 p-3 rounded-lg">
+                        ℹ️ เมื่อเลือกแล้ว ธีมจะเปลี่ยนทันทีเพื่อให้คุณดูตัวอย่าง อย่าลืมกด "บันทึก" เพื่อยืนยันการใช้งานจริง
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Feature Flags (New) -->
+            <div id="tab-content-features" class="hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl border border-purple-100 bg-purple-50 space-y-2">
+                    <h4 class="font-bold text-purple-800 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                        จัดการ Feature Flags
+                    </h4>
+                    <p class="text-xs text-purple-600">ใช้สำหรับเปิด-ปิดฟีเจอร์ใหม่ที่อยู่ระหว่างการพัฒนา หรือฟีเจอร์เฉพาะกิจ โดยไม่กระทบผู้ใช้งานทั่วไป</p>
+                </div>
+
+                <div class="flex gap-2">
+                    <input type="text" id="new-feature-key" placeholder="ชื่อ Key (เช่น new_calc_v2)" class="flex-1 p-3 border rounded-xl text-sm font-mono bg-white">
+                    <button onclick="addNewFeature()" class="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 shadow-md">เพิ่ม</button>
+                </div>
+
+                <div id="admin-features-list" class="space-y-3">
+                    <!-- Features rendered here -->
+                </div>
             </div>
 
             <!-- Tab: News Config -->
@@ -1004,6 +1175,11 @@
             document.getElementById('factor-railTop').value = tempConfig.calcSettings.factors.railTop;
             document.getElementById('factor-railBot').value = tempConfig.calcSettings.factors.railBot;
             document.getElementById('factor-sling').value = tempConfig.calcSettings.factors.sling;
+            
+            // Set current theme radio
+            const theme = tempConfig.theme || 'default';
+            const radios = document.getElementsByName('app-theme');
+            for(const r of radios) { r.checked = (r.value === theme); }
 
             const st = document.getElementById('admin-mode-status');
             st.innerText = isOnlineMode ? "สถานะ: Online Mode" : "สถานะ: Offline Mode";
@@ -1011,24 +1187,106 @@
             
             switchAdminTab('menu'); 
         }
-        function closeConfig() { document.getElementById('adminConfigModal').classList.add('hidden'); }
+        function closeConfig() { 
+            // Revert theme preview if cancelled
+            applyTheme(appConfig.theme);
+            document.getElementById('adminConfigModal').classList.add('hidden'); 
+        }
         function switchAdminTab(tab) {
-            ['menu','news','calc','saved'].forEach(t => {
-                document.getElementById('tab-btn-'+t).className = "px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap";
+            ['menu','news','calc','saved', 'theme', 'features'].forEach(t => {
+                document.getElementById('tab-btn-'+t).className = "px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1";
                 document.getElementById('tab-content-'+t).classList.add('hidden');
             });
-            document.getElementById('tab-btn-'+tab).className = "px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap";
+            document.getElementById('tab-btn-'+tab).className = "px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap flex items-center gap-1";
             document.getElementById('tab-content-'+tab).classList.remove('hidden');
 
             if(tab === 'menu') renderAdminMenu();
             if(tab === 'news') renderAdminNews();
             if(tab === 'saved') loadSavedQuotations();
+            if(tab === 'features') renderAdminFeatures();
         }
+
+        // Preview Theme function
+        function previewTheme(themeName) {
+            applyTheme(themeName);
+            tempConfig.theme = themeName;
+        }
+
+        // --- NEW: Feature Flags Management ---
+        function renderAdminFeatures() {
+            const list = document.getElementById('admin-features-list');
+            list.innerHTML = '';
+            const features = tempConfig.features || {};
+            
+            if (Object.keys(features).length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 text-xs py-4">ยังไม่มีฟีเจอร์ทดสอบ</div>';
+            }
+
+            Object.keys(features).forEach(key => {
+                const isChecked = features[key];
+                list.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                            </div>
+                            <div class="text-sm font-bold text-slate-700 font-mono">${key}</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" ${isChecked ? 'checked' : ''} onchange="tempConfig.features['${key}'] = this.checked">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                            </label>
+                            <button onclick="deleteFeature('${key}')" class="text-slate-300 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function addNewFeature() {
+            const input = document.getElementById('new-feature-key');
+            const key = input.value.trim();
+            if (!key) return alert('กรุณาตั้งชื่อ Feature Key');
+            if (tempConfig.features[key] !== undefined) return alert('ชื่อนี้มีอยู่แล้ว');
+            
+            if(!tempConfig.features) tempConfig.features = {};
+            tempConfig.features[key] = false; // Default off
+            input.value = '';
+            renderAdminFeatures();
+        }
+
+        function deleteFeature(key) {
+            if(confirm('ลบ Feature Flag นี้?')) {
+                delete tempConfig.features[key];
+                renderAdminFeatures();
+            }
+        }
+
         function renderAdminMenu() {
             const list = document.getElementById('admin-menu-list'); list.innerHTML = '';
+            
+            // 1. Stock Menus
             tempConfig.menus.forEach((menu, idx) => {
                 list.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-3"><div class="p-2 bg-slate-100 rounded text-slate-500">${ICONS[menu.icon]}</div><div class="flex-grow space-y-1"><input type="text" value="${menu.name}" onchange="tempConfig.menus[${idx}].name=this.value" class="w-full p-1 border rounded text-sm font-bold"><input type="text" value="${menu.sub}" onchange="tempConfig.menus[${idx}].sub=this.value" class="w-full p-1 border rounded text-xs text-slate-500"></div><input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red"></div>`;
             });
+
+            // 2. Separator & Calculator Toggle
+            const isCalcEnabled = tempConfig.calcSettings.enabled;
+            list.innerHTML += `
+                <div class="relative py-2"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div><div class="relative flex justify-center"><span class="bg-slate-50 px-2 text-xs text-slate-400">Add-ons</span></div></div>
+                <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-3 shadow-sm">
+                    <div class="p-2 bg-slate-100 rounded text-slate-500">${ICONS['calc'] || '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>'}</div>
+                    <div class="flex-grow space-y-1">
+                        <div class="text-sm font-bold text-slate-700">ระบบคำนวณราคา</div>
+                        <div class="text-xs text-slate-400">แสดงเมนูคำนวณ (ม่านม้วน/ภายนอก)</div>
+                    </div>
+                    <input type="checkbox" 
+                        ${isCalcEnabled ? 'checked' : ''} 
+                        onchange="tempConfig.calcSettings.enabled = this.checked; const other = document.getElementById('conf-calc-enabled'); if(other) other.checked = this.checked;" 
+                        class="w-5 h-5 accent-sunny-red">
+                </div>
+            `;
         }
         
         // --- EMOJI HELPER & IMPROVED NEWS RENDER ---
@@ -1180,8 +1438,17 @@
             tempConfig.calcSettings.factors.railTop = parseFloat(document.getElementById('factor-railTop').value);
             tempConfig.calcSettings.factors.railBot = parseFloat(document.getElementById('factor-railBot').value);
             tempConfig.calcSettings.factors.sling = parseFloat(document.getElementById('factor-sling').value);
+            
+            // Radio button value is already set in previewTheme/tempConfig.theme
+            // If user didn't change tab, it remains same. But we force read it to be sure.
+            const selectedTheme = document.querySelector('input[name="app-theme"]:checked')?.value || 'default';
+            tempConfig.theme = selectedTheme;
+
+            // Features are already updated in tempConfig via checkbox listeners
 
             appConfig = tempConfig;
+            applyTheme(appConfig.theme); // Apply definitively
+            
             if (isOnlineMode) db.collection("app_settings").doc("config").set(appConfig).then(() => { showToast("บันทึกสำเร็จ"); closeConfig(); renderSidebar(); });
             else { 
                 localStorage.setItem('sunny_app_config', JSON.stringify(appConfig)); 
@@ -1190,7 +1457,7 @@
                 switchSystem(currentSystem); 
                 checkAndNotifyNews(appConfig.newsItems); // Force check notification in Offline Mode
                 showToast("บันทึก(Offline)สำเร็จ"); 
-                closeConfig(); 
+                document.getElementById('adminConfigModal').classList.add('hidden'); // Close manually to avoid revert
             }
         }
 
