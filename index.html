@@ -12,7 +12,7 @@
     <!-- PWA Manifest (Android/Chrome) -->
     <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiU1VOTlkgU3RvY2sgU3lzdGVtIiwic2hvcnRfbmFtZSI6IlNVTk5ZIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiNFNjM5NDYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9jZG4taWNvbnS1wbmcuZmxhdGljb24uY29tLzUxMi8xMDYzLzEwNjMzNzYucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
     
-    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY (Xmas Fixed)</title>
+    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY (Clear BG)</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iI0U2Mzk0NiIgcng9IjgwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zdHlsZT0iaXRhbGljIiBmb250LXNpemU9IjM1MCI+UzwvdGV4dD48L3N2Zz4=">
@@ -221,23 +221,39 @@
         /* Default Pattern */
         .wooden-pattern { background-image: repeating-linear-gradient(180deg, rgba(210, 180, 140, 0.05) 0px, rgba(210, 180, 140, 0.05) 15px, rgba(0, 0, 0, 0.02) 16px, transparent 16px, transparent 24px); }
         
-        /* Custom Header Background Class */
+        /* Custom Header Background Class - Revised for Clarity */
         .header-custom-bg {
             background-size: cover;
-            background-position: center 30%; /* Focus a bit higher than center */
+            background-position: center center; /* Center the image */
             background-repeat: no-repeat;
             position: relative;
         }
-        /* Overlay to ensure text readability on custom images */
+        
+        /* Removed global overlay (the white mist) */
         .header-custom-bg::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to right, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%);
-            border-radius: 2rem; /* Match header border radius */
-            pointer-events: none;
-            z-index: 0;
+            display: none; 
         }
+
+        /* Glass Content Box for Text Readability */
+        .header-content-glass {
+            background: rgba(255, 255, 255, 0.9); /* White background with slight transparency */
+            backdrop-filter: blur(8px); /* Blur behind the box */
+            padding: 1.5rem 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); /* Stronger shadow to lift it up */
+            display: inline-block;
+            max-width: 100%;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        @media (max-width: 768px) {
+            .header-content-glass {
+                width: 100%;
+                padding: 1.25rem;
+                background: rgba(255, 255, 255, 0.95); /* More opaque on mobile for better reading */
+            }
+        }
+
         /* Ensure content is above overlay */
         #headerSection > div.relative { z-index: 10; }
 
@@ -263,6 +279,16 @@
 
         .btn-bounce:active { transform: scale(0.95); }
         [contenteditable]:empty:before { content: attr(placeholder); color: #9ca3af; display: block; }
+
+        /* Animation สำหรับพื้นหลัง Gradient */
+        @keyframes gradient-xy {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .animate-gradient-xy {
+            background-size: 200% 200%;
+            animation: gradient-xy 15s ease infinite;
+        }
 
         /* =========================================
            FIXED THEME: WHITE CHRISTMAS
@@ -290,23 +316,26 @@
             position: relative;
             overflow: hidden;
         }
-        /* Header Decoration Overlay */
+        /* Header Decoration Overlay - Show ONLY when NO custom bg */
         body.theme-christmas #headerSection:not(.header-custom-bg)::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M40 80c22.09 0 40-17.91 40-40S62.09 0 40 0 0 17.91 0 40s17.91 40 40 40zm0-10c16.57 0 30-13.43 30-30S56.57 10 40 10 10 23.43 10 40s13.43 30 30 30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
-        body.theme-christmas #headerSection h1,
-        body.theme-christmas #headerSection h2,
-        body.theme-christmas #headerSection span {
+        
+        /* FIX: Force White Text ONLY if NO custom background (Glass Box) is present */
+        body.theme-christmas #headerSection:not(.header-custom-bg) h1,
+        body.theme-christmas #headerSection:not(.header-custom-bg) h2,
+        body.theme-christmas #headerSection:not(.header-custom-bg) span {
             color: white !important;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        body.theme-christmas #productTypeLabel {
+        body.theme-christmas #headerSection:not(.header-custom-bg) #productTypeLabel {
             color: #fef08a !important; /* Gold text */
             font-style: italic;
         }
+
         /* Update indicators in header */
-        body.theme-christmas #headerSection .bg-green-50 {
+        body.theme-christmas #headerSection:not(.header-custom-bg) .bg-green-50 {
             background-color: rgba(255,255,255,0.2) !important;
             color: white !important;
             border-color: rgba(255,255,255,0.3) !important;
@@ -360,15 +389,9 @@
         body.theme-christmas .el-fire, 
         body.theme-christmas .el-snowman { display: none !important; }
         
-        /* Just keep Santa flying */
+        /* FIX: Hide Santa completely as requested */
         body.theme-christmas .el-santa {
-            left: -100px !important; top: 10% !important; bottom: auto !important;
-            animation: flySanta 20s linear infinite;
-            opacity: 0.8; font-size: 40px !important;
-        }
-        @keyframes flySanta {
-            0% { transform: translateX(-100px) rotate(5deg); }
-            100% { transform: translateX(120vw) rotate(5deg); }
+            display: none !important;
         }
 
         @media print {
@@ -379,7 +402,8 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 h-[100dvh] font-sans text-slate-800 flex overflow-hidden noselect">
+<!-- UPDATED BODY: Soft Gradient + Animation -->
+<body class="bg-gradient-to-br from-rose-50 via-slate-50 to-indigo-100 animate-gradient-xy h-[100dvh] font-sans text-slate-800 flex overflow-hidden noselect">
 
     <!-- Intro Splash -->
     <div id="intro-splash" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-700 ease-out">
@@ -389,7 +413,7 @@
 
     <!-- XMAS SCENE LAYER (Snow generated by JS) -->
     <div id="xmas-scene">
-        <div class="scene-el el-santa">🎅🛷🦌</div>
+        <!-- Santa removed -->
     </div>
 
     <!-- Toast Notification -->
@@ -465,7 +489,8 @@
             <!-- Header Section -->
             <div id="headerSection" class="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-100 wooden-pattern relative overflow-hidden hover:shadow-lg transition-all duration-500 ease-in-out">
                 <div class="absolute top-0 right-0 w-48 h-48 bg-red-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-60 pointer-events-none"></div>
-                <div class="relative z-10">
+                <!-- ID added for Glass Box Effect manipulation -->
+                <div id="headerContentWrapper" class="relative z-10 transition-all duration-300">
                     <h2 id="systemTitle" class="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">ระบบเช็คสต็อก</h2>
                     <h1 class="text-3xl md:text-5xl font-black text-slate-800 tracking-tight leading-tight">ตรวจสอบ<span class="text-sunny-red italic block md:inline" id="productTypeLabel">สินค้า</span></h1>
                     <div class="mt-3 flex flex-wrap items-center gap-3">
@@ -1600,16 +1625,24 @@
             document.getElementById('systemTitle').innerText = "ระบบเช็คสต็อก " + menu.name;
             document.getElementById('productTypeLabel').innerText = menu.name;
             
-            // --- HEADER BACKGROUND LOGIC (NEW) ---
+            // --- HEADER BACKGROUND LOGIC (REVISED) ---
             const header = document.getElementById('headerSection');
+            const headerContent = document.getElementById('headerContentWrapper'); // Inner div
+            
             if (menu.bgImage && menu.bgImage.trim() !== '') {
                 header.style.backgroundImage = `url('${menu.bgImage}')`;
                 header.classList.add('header-custom-bg');
                 header.classList.remove('wooden-pattern');
+                
+                // Add "Glass Box" effect to inner content so text is readable without full overlay
+                headerContent.classList.add('header-content-glass');
             } else {
                 header.style.backgroundImage = '';
                 header.classList.remove('header-custom-bg');
                 header.classList.add('wooden-pattern');
+                
+                // Remove Glass effect
+                headerContent.classList.remove('header-content-glass');
             }
             // -------------------------------------
 
