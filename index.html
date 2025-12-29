@@ -248,9 +248,22 @@
 
         @media (max-width: 768px) {
             .header-content-glass {
-                width: 100%;
-                padding: 1rem; /* ลด Padding มือถือ */
-                background: rgba(255, 255, 255, 0.65);
+                width: auto; /* แก้จาก 100% เป็น auto เพื่อให้หดตามเนื้อหา */
+                max-width: 90%; /* จำกัดความกว้างไม่ให้เกิน 90% */
+                margin: 0 auto; /* จัดกึ่งกลาง */
+                display: inline-block; /* แสดงผลแบบกล่องที่ไม่ขยายเต็ม */
+                padding: 0.75rem 1rem; /* ลด Padding มือถือลงอีก */
+                background: rgba(255, 255, 255, 0.6); /* ปรับความโปร่งใสเล็กน้อย */
+                backdrop-filter: blur(5px); /* ลด Blur ลงนิดหน่อยให้เห็นหลังลางๆ */
+            }
+            
+            /* ปรับขนาดตัวหนังสือในมือถือให้เล็กลงอีกนิด เพื่อให้กล่องเล็กลงตาม */
+            .header-content-glass h1 {
+                font-size: 1.5rem !important; /* ลดขนาดหัวข้อหลัก */
+            }
+            .header-content-glass h2 {
+                font-size: 0.65rem !important; /* ลดขนาดหัวข้อย่อย */
+                margin-bottom: 0.25rem !important;
             }
         }
 
