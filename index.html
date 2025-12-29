@@ -12,7 +12,7 @@
     <!-- PWA Manifest (Android/Chrome) -->
     <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiU1VOTlkgU3RvY2sgU3lzdGVtIiwic2hvcnRfbmFtZSI6IlNVTk5ZIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiNFNjM5NDYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9jZG4taWNvbnS1wbmcuZmxhdGljb24uY29tLzUxMi8xMDYzLzEwNjMzNzYucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
     
-    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY (V10 Header Image)</title>
+    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY (Xmas Fixed)</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iI0U2Mzk0NiIgcng9IjgwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zdHlsZT0iaXRhbGljIiBmb250LXNpemU9IjM1MCI+UzwvdGV4dD48L3N2Zz4=">
@@ -150,7 +150,7 @@
             } catch (error) { console.error("Firebase Init Error:", error); }
         }
 
-        // --- THEME LOGIC ---
+        // --- THEME LOGIC (IMPROVED) ---
         function applyTheme(theme) {
             const body = document.body;
             body.classList.remove('theme-christmas');
@@ -161,8 +161,8 @@
             
             if (theme === 'christmas') {
                 body.classList.add('theme-christmas');
-                primary = '#D62828';
-                dark = '#003049';
+                primary = '#D62828'; // Festive Red
+                dark = '#14532D'; // Christmas Green
                 showScene = 'block';
             }
 
@@ -265,71 +265,111 @@
         [contenteditable]:empty:before { content: attr(placeholder); color: #9ca3af; display: block; }
 
         /* =========================================
-           THEME: CHRISTMAS NIGHT
+           FIXED THEME: WHITE CHRISTMAS
            ========================================= */
         body.theme-christmas {
-            background: linear-gradient(to bottom, #0f172a 0%, #1e3a8a 60%, #172554 100%) !important;
-            background-attachment: fixed !important;
+            background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%) !important; /* Soft Red Tint */
+            background-image: radial-gradient(#ef4444 0.5px, transparent 0.5px), radial-gradient(#ef4444 0.5px, #fef2f2 0.5px) !important;
+            background-size: 20px 20px !important;
+            background-position: 0 0, 10px 10px !important;
             color: #1e293b;
         }
-        body.theme-christmas::before {
-            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1;
-            background-image: 
-                radial-gradient(1px 1px at 10% 10%, white, transparent),
-                radial-gradient(1px 1px at 20% 40%, white, transparent),
-                radial-gradient(2px 2px at 40% 20%, white, transparent),
-                radial-gradient(1px 1px at 60% 70%, white, transparent),
-                radial-gradient(2px 2px at 80% 30%, white, transparent),
-                radial-gradient(1px 1px at 90% 80%, white, transparent);
-            background-size: 300px 300px;
-            animation: twinkle 5s linear infinite alternate;
-            opacity: 0.6;
-        }
-        @keyframes twinkle { from { opacity: 0.3; } to { opacity: 0.8; } }
 
-        /* Christmas Header Override - Only if NO custom image */
+        /* Festive Scrollbar */
+        body.theme-christmas::-webkit-scrollbar-thumb {
+            background: repeating-linear-gradient(45deg, #ef4444, #ef4444 10px, #ffffff 10px, #ffffff 20px);
+            border-radius: 4px;
+            border: 2px solid white;
+        }
+
+        /* Christmas Header - Santa Style */
         body.theme-christmas #headerSection:not(.header-custom-bg) {
-            background: rgba(255, 255, 255, 0.95) !important;
-            border: 2px solid #D62828 !important;
-            box-shadow: 0 0 20px rgba(214, 40, 40, 0.3) !important;
-            backdrop-filter: blur(10px);
+            background: linear-gradient(to right, #dc2626, #b91c1c) !important; /* Deep Red */
+            border: 4px solid #fecaca !important;
+            box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4) !important;
+            position: relative;
+            overflow: hidden;
         }
-        body.theme-christmas .wooden-pattern { background-image: none !important; }
+        /* Header Decoration Overlay */
+        body.theme-christmas #headerSection:not(.header-custom-bg)::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M40 80c22.09 0 40-17.91 40-40S62.09 0 40 0 0 17.91 0 40s17.91 40 40 40zm0-10c16.57 0 30-13.43 30-30S56.57 10 40 10 10 23.43 10 40s13.43 30 30 30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        body.theme-christmas #headerSection h1,
+        body.theme-christmas #headerSection h2,
+        body.theme-christmas #headerSection span {
+            color: white !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        body.theme-christmas #productTypeLabel {
+            color: #fef08a !important; /* Gold text */
+            font-style: italic;
+        }
+        /* Update indicators in header */
+        body.theme-christmas #headerSection .bg-green-50 {
+            background-color: rgba(255,255,255,0.2) !important;
+            color: white !important;
+            border-color: rgba(255,255,255,0.3) !important;
+        }
 
-        /* Bento Grid Decoration */
+        /* Bento Cards - Gift Style */
         body.theme-christmas .bento-card {
-            background: rgba(255, 255, 255, 0.92) !important;
-            border: 1px solid rgba(255, 255, 255, 0.5) !important;
-            overflow: visible !important;
-            margin-top: 5px;
+            background: white !important;
+            border: 2px solid #bbf7d0 !important; /* Green Border */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
         }
+        /* Candy Cane Border Top */
         body.theme-christmas .bento-card::before {
-            content: ''; position: absolute; top: -4px; left: 0; right: 0; height: 4px;
-            background-image: linear-gradient(90deg, #ef4444 0%, #ef4444 20%, #22c55e 20%, #22c55e 40%, #fbbf24 40%, #fbbf24 60%, #3b82f6 60%, #3b82f6 80%, #ef4444 80%, #ef4444 100%);
-            background-size: 20px 4px;
-            border-radius: 4px 4px 0 0;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+            background: repeating-linear-gradient(45deg, #ef4444, #ef4444 10px, #ffffff 10px, #ffffff 20px);
+            z-index: 10;
+        }
+        /* Holly decoration */
+        body.theme-christmas .bento-card::after {
+            content: '🎀'; position: absolute; top: 5px; right: 5px; font-size: 16px; 
             opacity: 0.8;
         }
-        body.theme-christmas .bento-card::after {
-            content: '🦌'; position: absolute; top: -12px; right: -5px; font-size: 18px; transform: rotate(10deg);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1); filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+
+        /* Button Overrides */
+        body.theme-christmas button#searchButton {
+            background: linear-gradient(to bottom, #16a34a, #15803d) !important; /* Christmas Green Button */
+            box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.4) !important;
+        }
+        body.theme-christmas button#searchButton:hover {
+            transform: scale(1.05);
+            background: linear-gradient(to bottom, #15803d, #166534) !important;
         }
 
-        /* XMAS SCENE */
+        /* XMAS SCENE - Falling Snow Only (Cleaner) */
         #xmas-scene {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 180px; pointer-events: none; z-index: 0; display: none; overflow: hidden;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; display: none; overflow: hidden;
         }
-        #xmas-scene .ground {
-            position: absolute; bottom: -20px; left: -10%; width: 120%; height: 60px;
-            background: linear-gradient(to top, #e2e8f0, #f8fafc); border-radius: 50% 50% 0 0; box-shadow: 0 -5px 15px rgba(255,255,255,0.2);
+        .snow-flake {
+            position: absolute; top: -10px; color: #cbd5e1;
+            animation: fall linear infinite;
         }
-        .scene-el { position: absolute; bottom: 25px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3)); font-size: 40px; }
-        .el-tree { left: 10px; font-size: 80px !important; bottom: 20px !important; z-index: 2; transform: scale(1.1); }
-        .el-santa { left: 90px; bottom: 30px !important; font-size: 50px !important; z-index: 3; transform: scaleX(-1); }
-        .el-fire { left: 140px; bottom: 25px !important; font-size: 35px !important; z-index: 3; animation: fireFlicker 1s infinite alternate; }
-        @keyframes fireFlicker { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.1); opacity: 1; filter: brightness(1.2); } }
-        .el-snowman { right: 20px; bottom: 30px !important; font-size: 60px !important; z-index: 2; animation: snowBob 3s infinite ease-in-out; }
-        @keyframes snowBob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(2deg); } }
+        @keyframes fall {
+            to { transform: translateY(105vh) rotate(360deg); }
+        }
+
+        /* Hide the old clumsy ground elements */
+        body.theme-christmas .ground,
+        body.theme-christmas .el-tree,
+        body.theme-christmas .el-fire, 
+        body.theme-christmas .el-snowman { display: none !important; }
+        
+        /* Just keep Santa flying */
+        body.theme-christmas .el-santa {
+            left: -100px !important; top: 10% !important; bottom: auto !important;
+            animation: flySanta 20s linear infinite;
+            opacity: 0.8; font-size: 40px !important;
+        }
+        @keyframes flySanta {
+            0% { transform: translateX(-100px) rotate(5deg); }
+            100% { transform: translateX(120vw) rotate(5deg); }
+        }
 
         @media print {
             body * { visibility: hidden; }
@@ -347,13 +387,9 @@
         <p class="text-sm font-bold text-slate-400 mt-4 tracking-widest">STOCK SYSTEM</p>
     </div>
 
-    <!-- XMAS SCENE LAYER -->
+    <!-- XMAS SCENE LAYER (Snow generated by JS) -->
     <div id="xmas-scene">
-        <div class="ground"></div>
-        <div class="scene-el el-tree">🎄</div>
-        <div class="scene-el el-santa">🎅</div>
-        <div class="scene-el el-fire">🔥</div>
-        <div class="scene-el el-snowman">⛄</div>
+        <div class="scene-el el-santa">🎅🛷🦌</div>
     </div>
 
     <!-- Toast Notification -->
@@ -640,9 +676,9 @@
                             <input type="radio" name="app-theme" value="christmas" class="peer sr-only" onchange="previewTheme('christmas')">
                             <div class="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-green-600 peer-checked:bg-green-50 transition-all text-center h-full hover:shadow-md relative overflow-hidden">
                                 <div class="absolute -top-2 -right-2 text-3xl opacity-20">❄️</div>
-                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#D42426] to-[#165B33] mx-auto mb-3 shadow-sm border-2 border-white ring-1 ring-slate-100 flex items-center justify-center text-white text-lg">🎄</div>
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#D42426] to-[#ffffff] mx-auto mb-3 shadow-sm border-2 border-white ring-1 ring-slate-100 flex items-center justify-center text-white text-lg">🎄</div>
                                 <h5 class="font-bold text-slate-700">คริสต์มาส</h5>
-                                <p class="text-xs text-slate-400 mt-1">โทนแดง-เขียว พร้อมหิมะตก</p>
+                                <p class="text-xs text-slate-400 mt-1">โทนขาว-แดง พร้อมหิมะ (แก้ไขใหม่)</p>
                             </div>
                         </label>
                     </div>
