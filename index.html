@@ -376,6 +376,38 @@
         </div>
     </div>
 
+    <!-- Help Modal (NEW FIX) -->
+    <div id="helpModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-fade-in-up overflow-hidden" onclick="event.stopPropagation()">
+            <div class="p-6 bg-sunny-red text-white flex justify-between items-start">
+                <div>
+                    <h3 class="font-bold text-xl mb-1">คู่มือการใช้งาน</h3>
+                    <p class="text-red-100 text-xs">ระบบเช็คสต็อกและคำนวณราคา</p>
+                </div>
+                <button onclick="document.getElementById('helpModal').classList.add('hidden')" class="text-red-100 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg p-1 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-800 flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-red-50 text-sunny-red flex items-center justify-center text-xs">1</span> การค้นหาสต็อก</h4>
+                    <p class="text-sm text-slate-500 ml-8">เลือกเมนูสินค้าทางซ้ายมือ พิมพ์รหัสสินค้าที่ต้องการค้นหา (ไม่ต้องพิมพ์เต็มก็ได้) ระบบจะแสดงสินค้าที่มีชื่อใกล้เคียง</p>
+                </div>
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-800 flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-red-50 text-sunny-red flex items-center justify-center text-xs">2</span> การคำนวณราคา</h4>
+                    <p class="text-sm text-slate-500 ml-8">เลือกเมนู "คำนวณราคา" ระบุความกว้าง ความสูง และราคาต่อตารางหลา ระบบจะคำนวณราคาขายพร้อมอุปกรณ์ให้ทันที</p>
+                </div>
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-800 flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-red-50 text-sunny-red flex items-center justify-center text-xs">3</span> การบันทึกใบเสนอราคา</h4>
+                    <p class="text-sm text-slate-500 ml-8">เมื่อคำนวณเสร็จ สามารถกด "สร้างใบเสนอราคา" เพื่อดูสรุปและบันทึกเก็บไว้ดูย้อนหลังได้ (ต้อง Login ก่อนเพื่อบันทึกบน Cloud)</p>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 text-center">
+                <button onclick="document.getElementById('helpModal').classList.add('hidden')" class="w-full py-2 bg-slate-800 text-white rounded-xl font-bold hover:bg-black transition-colors">เข้าใจแล้ว</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Confirm Modal -->
     <div id="confirmModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-xs text-center animate-fade-in-up">
