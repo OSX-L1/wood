@@ -107,7 +107,6 @@
 </head>
 <body class="bg-gradient-to-br from-rose-50 via-slate-50 to-indigo-100 animate-gradient-xy h-[100dvh] font-sans text-slate-800 flex overflow-hidden noselect">
 
-    <!-- Intro Splash -->
     <div id="intro-splash" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-700 ease-out">
         <h1 class="text-6xl font-black text-sunny-red italic tracking-tighter">SUNNY</h1>
         <p class="text-sm font-bold text-slate-400 mt-4 tracking-widest">STOCK SYSTEM</p>
@@ -269,8 +268,11 @@
         </div>
     </div>
 
+    <!-- MAIN SCRIPT -->
     <script>
-        // --- GLOBAL VARIABLES ---
+        // ==========================
+        //  GLOBAL VARIABLES & INIT
+        // ==========================
         const firebaseConfig = {
             apiKey: "AIzaSyCAWVxXlTIzt9zvuCZADEVYi1xCtJ8hdcA",
             authDomain: "sunny1988-a4483.firebaseapp.com",
@@ -299,6 +301,7 @@
             pvc: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>',
             roller: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>'
         };
+
         const WOOD_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv";
         const PVC_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1230787558&single=true&output=csv";
         const ROLLER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1019928538&single=true&output=csv";
@@ -306,18 +309,35 @@
         const STOCK_COLUMNS_WOOD={'4ft':{col:4,meter:'1.22 ม.'},'4.5ft':{col:6,meter:'1.37 ม.'},'5ft':{col:8,meter:'1.52 ม.'},'5.5ft':{col:10,meter:'1.68 ม.'},'6ft':{col:12,meter:'1.83 ม.'},'6.5ft':{col:14,meter:'1.98 ม.'},'7ft':{col:16,meter:'2.13 ม.'},'8ft':{col:18,meter:'2.44 ม.'}};
         const EMOJI_LIST = ['📢', '🔥', '✨', '🎉', '⚠️', '🚨', '✅', '❌', '🟢', '🔴', '📅', '🕒', '📌', '📍', '💡', '🚚', '📦', '🎁', '🏷️', '🛒', '💬', '📞', '📧', '🏠', '🏢', '🛠️', '🔧', '⚙️', '📈', '💰', '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'];
 
+        // --- STATE VARIABLES ---
         let db = null, auth = null, isOnlineMode = false;
         let appConfig = DEFAULT_CONFIG;
         let tempConfig = {}; 
         let currentSystem = 'WOOD';
         let cache = { WOOD: null, PVC: null, ROLLER: null, ALU: null };
-        let deferredPrompt;
+        let deferredPrompt; // Declared ONCE here
         let slideshowInterval = null;
         let calcMode = 'EXT'; 
         let calcUnit = 'm'; 
         let calcItems = [];
 
-        // --- INIT LOGIC ---
+        // --- SECURITY ---
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123) return false;
+            if (e.ctrlKey && (e.keyCode == 85 || (e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)))) return false;
+        };
+
+        // --- SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('✅ ServiceWorker Registered'))
+                    .catch(err => console.warn('⚠️ ServiceWorker Failed:', err.message));
+            });
+        }
+
+        // --- INIT CONFIG ---
         try {
             const saved = localStorage.getItem('sunny_app_config');
             if(saved) appConfig = JSON.parse(saved);
@@ -326,7 +346,7 @@
             localStorage.removeItem('sunny_app_config');
         }
 
-        // --- HELPER FUNCTIONS ---
+        // --- FUNCTIONS ---
         function isDateNew(dateStr) { if(!dateStr) return false; return (new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24) < 7; }
         function formatDate(dateStr) { if(!dateStr) return ''; return new Date(dateStr).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); }
         function isValidCode(c){if(!c||c.includes(',')||c.includes('"')||c.length>20)return false; const b=['SLAT','PCS','BOX','จำนวน','NAME','CODE','PRICE','35MM','50MM','F-WOOD','25MM','รหัส','คงเหลือ','ชื่อ','ความสูง']; return !b.some(w=>c.toUpperCase().includes(w));}
