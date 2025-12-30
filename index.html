@@ -152,6 +152,25 @@
         }
 
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['Sarabun', 'Inter', 'sans-serif'] }, colors: { 'sunny-red': 'var(--sunny-red)', 'sunny-dark': 'var(--sunny-dark)', 'sunny-bg': '#F1FAEE' } } } }
+
+        // --- NEW: RICH TEXT & EMOJI UTILS ---
+        const EMOJI_LIST = ['📢', '🔥', '✨', '🎉', '⚠️', '🚨', '✅', '❌', '🟢', '🔴', '📅', '🕒', '📌', '📍', '💡', '🚚', '📦', '🎁', '🏷️', '🛒', '💬', '📞', '📧', '🏠', '🏢', '🛠️', '🔧', '⚙️', '📈', '💰', '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'];
+
+        function execCmd(command, value = null) {
+            document.execCommand(command, false, value);
+        }
+
+        function insertEmoji(idx, char, type = 'text') {
+            const editorId = type === 'badge' ? `badge-edit-${idx}` : `news-edit-${idx}`;
+            const pickerId = type === 'badge' ? `emoji-picker-badge-${idx}` : `emoji-picker-${idx}`;
+            const el = document.getElementById(editorId);
+            if(!el) return;
+            el.focus();
+            document.execCommand('insertText', false, char);
+            const event = new Event('input', { bubbles: true });
+            el.dispatchEvent(event);
+            document.getElementById(pickerId).classList.add('hidden');
+        }
     </script>
     <style>
         /* CORE STYLES */
@@ -369,19 +388,7 @@
 
     <!-- Admin & Config Modals -->
     <div id="adminLoginModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"><div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in-up"><h3 class="text-xl font-bold text-slate-800 mb-4 text-center">ผู้ดูแลระบบ</h3><input type="password" id="adminPassword" class="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 mb-4 focus:ring-2 focus:ring-sunny-red focus:outline-none" placeholder="รหัสผ่าน..."><p id="loginError" class="text-red-500 text-xs mb-4 text-center hidden">รหัสผ่านไม่ถูกต้อง</p><div class="flex gap-2"><button onclick="closeAdminLogin()" class="flex-1 py-2 text-slate-400 font-bold text-sm bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button><button onclick="handleLogin()" class="flex-1 py-2 bg-sunny-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-lg shadow-red-200">เข้าสู่ระบบ</button></div></div></div>
-    <div id="adminConfigModal" class="hidden fixed inset-0 z-[100] bg-white flex flex-col"><div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white shadow-sm z-10"><h2 class="text-lg font-black text-slate-800 flex items-center gap-2"><span class="text-sunny-red">⚙️</span> ตั้งค่าระบบ</h2><div class="flex items-center gap-2"><span id="admin-mode-status" class="text-xs font-bold text-green-600 mr-2">Online</span><button onclick="saveConfig()" class="bg-sunny-red text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 btn-bounce">บันทึก</button><button onclick="closeConfig()" class="text-slate-400 hover:text-slate-600 px-2 text-xl">✕</button></div></div><div class="flex border-b border-slate-200 overflow-x-auto"><button id="tab-btn-menu" onclick="switchAdminTab('menu')" class="px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap">จัดการเมนู</button><button id="tab-btn-news" onclick="switchAdminTab('news')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ข่าวสาร</button><button id="tab-btn-calc" onclick="switchAdminTab('calc')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">สูตรคำนวณ</button><button id="tab-btn-saved" onclick="switchAdminTab('saved')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ใบเสนอราคา</button><button id="tab-btn-theme" onclick="switchAdminTab('theme')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ธีม</button><button id="tab-btn-features" onclick="switchAdminTab('features')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">Features</button></div><div class="flex-1 overflow-y-auto p-4 bg-slate-50 custom-scrollbar"><div id="tab-content-menu" class="space-y-4 max-w-2xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200"><label class="block text-xs font-bold text-slate-400 uppercase mb-2">ชื่อแอพพลิเคชัน</label><input type="text" id="conf-app-title" class="w-full p-2 border rounded font-bold text-lg text-sunny-red"></div><div id="admin-menu-list" class="space-y-3"></div></div><div id="tab-content-news" class="hidden space-y-4 max-w-3xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between"><div><label class="font-bold text-slate-700">ความเร็วตัววิ่ง</label><p class="text-xs text-slate-400">1=ช้า, 5=เร็ว</p></div><input type="range" id="conf-news-speed" min="1" max="5" class="w-32 accent-sunny-red"></div><button onclick="addNewNewsItem()" class="w-full py-3 bg-white border-2 border-dashed border-slate-300 text-slate-400 font-bold rounded-xl hover:border-sunny-red hover:text-sunny-red transition-all">+ เพิ่มประกาศใหม่</button><div id="admin-news-list" class="space-y-3"></div></div><div id="tab-content-calc" class="hidden space-y-4 max-w-xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between"><span class="font-bold text-slate-700">เปิดใช้งานระบบคำนวณ</span><input type="checkbox" id="conf-calc-enabled" class="w-6 h-6 accent-sunny-red"></div><div class="bg-white p-4 rounded-xl border border-slate-200 space-y-4"><h3 class="font-bold border-b pb-2">ตัวแปรสูตรคำนวณ</h3><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-bold text-slate-400">ตัวคูณผ้า (Fabric Mult)</label><input type="number" step="0.1" id="factor-fabricMult" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">ขั้นต่ำ (Min Area)</label><input type="number" step="0.1" id="factor-minArea" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">อุปกรณ์ภายนอก (Eq Ext)</label><input type="number" id="factor-eqExt" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">รางบน (Rail Top)</label><input type="number" id="factor-railTop" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">รางล่าง (Rail Bot)</label><input type="number" id="factor-railBot" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">สลิง (Sling)</label><input type="number" id="factor-sling" class="w-full p-2 border rounded"></div></div></div></div><div id="tab-content-saved" class="hidden space-y-4 max-w-2xl mx-auto"><div id="saved-quotations-list" class="space-y-2"></div></div><div id="tab-content-theme" class="hidden space-y-4 max-w-2xl mx-auto"><div class="grid grid-cols-2 gap-4"><label class="cursor-pointer block"><input type="radio" name="app-theme" value="default" class="peer sr-only" onchange="previewTheme('default')"><div class="p-4 rounded-xl border-2 peer-checked:border-sunny-red peer-checked:bg-red-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">☀️</div><div class="font-bold text-slate-700">Standard</div><div class="text-xs text-slate-400">ค่าเริ่มต้น</div></div></label><label class="cursor-pointer block"><input type="radio" name="app-theme" value="christmas" class="peer sr-only" onchange="previewTheme('christmas')"><div class="p-4 rounded-xl border-2 peer-checked:border-green-500 peer-checked:bg-green-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">🎄</div><div class="font-bold text-green-700">Christmas</div><div class="text-xs text-slate-400">เทศกาลคริสต์มาส</div></div></label></div></div><div id="tab-content-features" class="hidden space-y-4 max-w-xl mx-auto"><div class="bg-purple-50 p-4 rounded-xl border border-purple-100 mb-4"><h3 class="font-bold text-purple-700 text-sm mb-2">🚀 Feature Flags (Experimental)</h3><div id="admin-features-list" class="space-y-2"></div></div><div class="flex gap-2"><input type="text" id="new-feature-key" placeholder="Feature Key..." class="flex-1 p-2 border rounded text-sm"><button onclick="addNewFeature()" class="bg-purple-600 text-white px-3 py-2 rounded font-bold text-xs">Add</button></div></div></div><div class="p-4 border-t border-slate-200 bg-white"><button id="logoutBtn" onclick="logoutAdmin()" class="w-full py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 hidden">ออกจากระบบ</button></div></div>
-    <div id="helpModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up" onclick="event.stopPropagation()">
-            <h3 class="text-xl font-bold text-slate-800 mb-4">วิธีใช้งาน</h3>
-            <ul class="space-y-3 text-sm text-slate-600">
-                <li class="flex gap-3"><span class="bg-red-100 text-sunny-red font-bold rounded px-2 py-0.5 h-fit">1</span> <span>เลือกประเภทสินค้าจากเมนูด้านซ้าย (หรือกดปุ่มเมนูบนมือถือ)</span></li>
-                <li class="flex gap-3"><span class="bg-red-100 text-sunny-red font-bold rounded px-2 py-0.5 h-fit">2</span> <span>พิมพ์รหัสสินค้าในช่องค้นหา หรือกด "เลือกจากรายการ"</span></li>
-                <li class="flex gap-3"><span class="bg-red-100 text-sunny-red font-bold rounded px-2 py-0.5 h-fit">3</span> <span>ระบบจะแสดงจำนวนสต็อกที่มีอยู่</span></li>
-                <li class="flex gap-3"><span class="bg-red-100 text-sunny-red font-bold rounded px-2 py-0.5 h-fit">4</span> <span>ใช้เมนู "คำนวณราคา" เพื่อประเมินราคาเบื้องต้น</span></li>
-            </ul>
-            <button onclick="document.getElementById('helpModal').classList.add('hidden')" class="mt-6 w-full py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200">ปิดหน้าต่าง</button>
-        </div>
-    </div>
+    <div id="adminConfigModal" class="hidden fixed inset-0 z-[100] bg-white flex flex-col"><div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white shadow-sm z-10"><h2 class="text-lg font-black text-slate-800 flex items-center gap-2"><span class="text-sunny-red">⚙️</span> ตั้งค่าระบบ</h2><div class="flex items-center gap-2"><span id="admin-mode-status" class="text-xs font-bold text-green-600 mr-2">Online</span><button onclick="saveConfig()" class="bg-sunny-red text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 btn-bounce">บันทึก</button><button onclick="closeConfig()" class="text-slate-400 hover:text-slate-600 px-2 text-xl">✕</button></div></div><div class="flex border-b border-slate-200 overflow-x-auto"><button id="tab-btn-menu" onclick="switchAdminTab('menu')" class="px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap">จัดการเมนู</button><button id="tab-btn-news" onclick="switchAdminTab('news')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ข่าวสาร</button><button id="tab-btn-calc" onclick="switchAdminTab('calc')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">สูตรคำนวณ</button><button id="tab-btn-saved" onclick="switchAdminTab('saved')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ใบเสนอราคา</button><button id="tab-btn-theme" onclick="switchAdminTab('theme')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ธีม</button><button id="tab-btn-features" onclick="switchAdminTab('features')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">Features</button></div><div class="flex-1 overflow-y-auto p-4 bg-slate-50 custom-scrollbar"><div id="tab-content-menu" class="space-y-4 max-w-2xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200"><label class="block text-xs font-bold text-slate-400 uppercase mb-2">ชื่อแอพพลิเคชัน</label><input type="text" id="conf-app-title" class="w-full p-2 border rounded font-bold text-lg text-sunny-red"></div><div id="admin-menu-list" class="space-y-3"></div></div><div id="tab-content-news" class="hidden space-y-4 max-w-3xl mx-auto"><div id="admin-news-list" class="space-y-3"></div><button onclick="addNewNewsItem()" class="w-full py-3 bg-white border-2 border-dashed border-slate-300 text-slate-400 font-bold rounded-xl hover:border-sunny-red hover:text-sunny-red transition-all mt-4">+ เพิ่มประกาศใหม่</button></div><div id="tab-content-calc" class="hidden space-y-4 max-w-xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between"><span class="font-bold text-slate-700">เปิดใช้งานระบบคำนวณ</span><input type="checkbox" id="conf-calc-enabled" class="w-6 h-6 accent-sunny-red"></div><div class="bg-white p-4 rounded-xl border border-slate-200 space-y-4"><h3 class="font-bold border-b pb-2">ตัวแปรสูตรคำนวณ</h3><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-bold text-slate-400">ตัวคูณผ้า (Fabric Mult)</label><input type="number" step="0.1" id="factor-fabricMult" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">ขั้นต่ำ (Min Area)</label><input type="number" step="0.1" id="factor-minArea" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">อุปกรณ์ภายนอก (Eq Ext)</label><input type="number" id="factor-eqExt" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">รางบน (Rail Top)</label><input type="number" id="factor-railTop" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">รางล่าง (Rail Bot)</label><input type="number" id="factor-railBot" class="w-full p-2 border rounded"></div><div><label class="text-xs font-bold text-slate-400">สลิง (Sling)</label><input type="number" id="factor-sling" class="w-full p-2 border rounded"></div></div></div></div><div id="tab-content-saved" class="hidden space-y-4 max-w-2xl mx-auto"><div id="saved-quotations-list" class="space-y-2"></div></div><div id="tab-content-theme" class="hidden space-y-4 max-w-2xl mx-auto"><div class="grid grid-cols-2 gap-4"><label class="cursor-pointer block"><input type="radio" name="app-theme" value="default" class="peer sr-only" onchange="previewTheme('default')"><div class="p-4 rounded-xl border-2 peer-checked:border-sunny-red peer-checked:bg-red-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">☀️</div><div class="font-bold text-slate-700">Standard</div><div class="text-xs text-slate-400">ค่าเริ่มต้น</div></div></label><label class="cursor-pointer block"><input type="radio" name="app-theme" value="christmas" class="peer sr-only" onchange="previewTheme('christmas')"><div class="p-4 rounded-xl border-2 peer-checked:border-green-500 peer-checked:bg-green-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">🎄</div><div class="font-bold text-green-700">Christmas</div><div class="text-xs text-slate-400">เทศกาลคริสต์มาส</div></div></label></div></div><div id="tab-content-features" class="hidden space-y-4 max-w-xl mx-auto"><div class="bg-purple-50 p-4 rounded-xl border border-purple-100 mb-4"><h3 class="font-bold text-purple-700 text-sm mb-2">🚀 Feature Flags (Experimental)</h3><div id="admin-features-list" class="space-y-2"></div></div><div class="flex gap-2"><input type="text" id="new-feature-key" placeholder="Feature Key..." class="flex-1 p-2 border rounded text-sm"><button onclick="addNewFeature()" class="bg-purple-600 text-white px-3 py-2 rounded font-bold text-xs">Add</button></div></div></div><div class="p-4 border-t border-slate-200 bg-white"><button id="logoutBtn" onclick="logoutAdmin()" class="w-full py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 hidden">ออกจากระบบ</button></div></div>
     <div id="quotationModal" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white w-full max-w-2xl rounded-none md:rounded-xl shadow-2xl overflow-hidden animate-fade-in-up my-auto">
             <div class="p-8 bg-white" id="quotationContent">
@@ -410,7 +417,144 @@
     </div>
 
     <script>
-        // --- CORE SYSTEM VARIABLES ---
+        // --- RICH TEXT & EMOJI UTILS ---
+        const EMOJI_LIST_RICH = ['📢', '🔥', '✨', '🎉', '⚠️', '🚨', '✅', '❌', '🟢', '🔴', '📅', '🕒', '📌', '📍', '💡', '🚚', '📦', '🎁', '🏷️', '🛒', '💬', '📞', '📧', '🏠', '🏢', '🛠️', '🔧', '⚙️', '📈', '💰', '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'];
+
+        function execCmd(command, value = null) {
+            document.execCommand(command, false, value);
+        }
+
+        function insertEmoji(idx, char, type = 'text') {
+            const editorId = type === 'badge' ? `badge-edit-${idx}` : `news-edit-${idx}`;
+            const pickerId = type === 'badge' ? `emoji-picker-badge-${idx}` : `emoji-picker-${idx}`;
+            
+            const el = document.getElementById(editorId);
+            if(!el) return;
+            
+            el.focus();
+            document.execCommand('insertText', false, char);
+            
+            // Trigger input event manually because execCommand doesn't always trigger it
+            const event = new Event('input', { bubbles: true });
+            el.dispatchEvent(event);
+            
+            document.getElementById(pickerId).classList.add('hidden');
+        }
+
+        // --- GLOBAL VARIABLES (Auth logic added) ---
+        // ... (Keep existing variables)
+        let currentUser = null; // New User State
+
+        // ... (Keep existing initFirebase) ...
+        // ... but ADD onAuthStateChanged listener inside initFirebase logic
+        
+        // ... (Keep existing renderAdminNews BUT replace with new RICH TEXT version below) ...
+
+        function renderAdminNews() {
+            const list = document.getElementById('admin-news-list'); 
+            if(!list) return;
+            list.innerHTML = '';
+            
+            const sorted = [...(tempConfig.newsItems || [])].sort((a,b) => (b.pinned===a.pinned)? 0 : b.pinned? 1 : -1);
+            
+            sorted.forEach((item, idx) => {
+                const realIdx = tempConfig.newsItems.findIndex(x => x.id === item.id);
+                
+                let emojiGridText = EMOJI_LIST_RICH.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'text')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
+                let emojiGridBadge = EMOJI_LIST_RICH.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'badge')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
+
+                const createToolbar = (type) => `
+                    <div class="flex gap-1 mb-1.5 flex-wrap items-center">
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('bold')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">B</button>
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('italic')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] italic hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">I</button>
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('underline')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] underline hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">U</button>
+                        <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                        <button onmousedown="event.preventDefault()" onclick="document.getElementById('emoji-picker-${type === 'badge' ? 'badge-' : ''}${realIdx}').classList.toggle('hidden')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50 hover:text-sunny-red">😀</button>
+                    </div>
+                `;
+
+                list.innerHTML += `
+                    <div class="p-4 rounded-xl border ${item.pinned ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} relative group shadow-sm mb-4">
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex-1 space-y-2">
+                                    <div class="flex justify-between items-end"><label class="text-[10px] text-slate-400 font-bold uppercase">ข้อความประกาศ</label></div>
+                                    ${createToolbar('text')}
+                                    <div class="relative">
+                                        <div id="news-edit-${realIdx}" contenteditable="true" class="w-full p-2 text-sm border rounded bg-white focus:outline-none focus:ring-1 focus:ring-sunny-red min-h-[60px] max-h-32 overflow-y-auto font-sans" oninput="tempConfig.newsItems[${realIdx}].text = this.innerHTML">${item.text}</div>
+                                        <div id="emoji-picker-${realIdx}" class="hidden absolute top-8 left-0 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64 mt-1">
+                                            <div class="flex justify-between items-center px-2 pb-2 border-b border-slate-100 mb-2"><span class="text-xs font-bold text-slate-400">เลือก Emoji</span><button onclick="document.getElementById('emoji-picker-${realIdx}').classList.add('hidden')" class="text-slate-300 hover:text-red-500 text-xs">✕</button></div>
+                                            <div class="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto custom-scrollbar">${emojiGridText}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2 pt-8">
+                                    <button onclick="togglePinNews(${realIdx})" class="${item.pinned?'text-white bg-sunny-red':'text-slate-400 bg-white border'} p-2 rounded-lg shadow-sm transition-all hover:scale-105" title="${item.pinned?'ยกเลิกปักหมุด':'ปักหมุด'}"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/></svg></button>
+                                    <button onclick="deleteNews(${realIdx})" class="text-slate-400 hover:text-red-500 bg-white border p-2 rounded-lg shadow-sm transition-all hover:scale-105" title="ลบ"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 border-t border-slate-200 pt-3 mt-1">
+                                <div class="relative">
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">ข้อความป้าย (Badge)</label>
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <button onmousedown="event.preventDefault()" onclick="document.getElementById('emoji-picker-badge-${realIdx}').classList.toggle('hidden')" class="p-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50">😀</button>
+                                    </div>
+                                    <div id="badge-edit-${realIdx}" contenteditable="true" class="w-full p-1.5 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-sunny-red font-bold text-slate-600 bg-white min-h-[30px] whitespace-nowrap overflow-hidden" oninput="tempConfig.newsItems[${realIdx}].badgeLabel = this.innerHTML">${item.badgeLabel}</div>
+                                    <div id="emoji-picker-badge-${realIdx}" class="hidden absolute bottom-full left-0 mb-1 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64">
+                                        <div class="flex justify-between items-center px-2 pb-2 border-b border-slate-100 mb-2"><span class="text-xs font-bold text-slate-400">Emoji (ป้าย)</span><button onclick="document.getElementById('emoji-picker-badge-${realIdx}').classList.add('hidden')" class="text-slate-300 hover:text-red-500 text-xs">✕</button></div>
+                                        <div class="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto custom-scrollbar">${emojiGridBadge}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีพื้นหลังป้าย</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" value="${item.badgeColor}" onchange="tempConfig.newsItems[${realIdx}].badgeColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                        <span class="text-[10px] text-slate-400 font-mono">${item.badgeColor}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีตัวอักษรป้าย</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" value="${item.badgeTextColor}" onchange="tempConfig.newsItems[${realIdx}].badgeTextColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                        <span class="text-[10px] text-slate-400 font-mono">${item.badgeTextColor}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีข้อความหลัก</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" value="${item.textColor}" onchange="tempConfig.newsItems[${realIdx}].textColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                        <span class="text-[10px] text-slate-400 font-mono">${item.textColor}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-2 border-t border-slate-100 border-dashed">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-[10px] text-slate-400">วันที่:</label>
+                                    <input type="date" value="${item.date.split('T')[0]}" onchange="tempConfig.newsItems[${realIdx}].date=this.value" class="text-xs border rounded p-1 text-slate-500 bg-slate-50">
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+        
+        function addNewNewsItem() { 
+            if(!tempConfig.newsItems) tempConfig.newsItems = [];
+            tempConfig.newsItems.unshift({ 
+                id: Date.now(), 
+                text: "ประกาศใหม่...", 
+                date: new Date().toISOString(), 
+                pinned: false, 
+                badgeLabel: "NEW!", 
+                badgeColor: "#E63946", 
+                badgeTextColor: "#FFFFFF", 
+                textColor: "#334155" 
+            }); 
+            renderAdminNews(); 
+        }
+
+        // ... existing functions from your uploaded file (index30.html) ...
+        // ... (This section continues with the original logic) ...
         const WOOD_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1132498145&single=true&output=csv";
         const PVC_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1230787558&single=true&output=csv";
         const ROLLER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1019928538&single=true&output=csv";
@@ -452,8 +596,7 @@
         async function loadSavedQuotations() { const list = document.getElementById('saved-quotations-list'); list.innerHTML = '<div class="text-center text-slate-400 py-4"><span class="loader w-4 h-4 border-2 border-slate-300 border-t-sunny-red rounded-full mr-2"></span>กำลังโหลด...</div>'; let quotes = []; if (isOnlineMode) { try { const snap = await db.collection("quotations").orderBy("id", "desc").limit(20).get(); snap.forEach(doc => quotes.push({ ...doc.data(), docId: doc.id })); } catch (e) { console.error(e); list.innerHTML = "Error loading data"; return; } } else { quotes = JSON.parse(localStorage.getItem('sunny_quotations')) || []; quotes.sort((a,b) => b.id - a.id); } if(quotes.length === 0) { list.innerHTML = '<div class="text-center text-slate-400 text-sm">ไม่มีข้อมูล</div>'; return; } list.innerHTML = ''; quotes.forEach(q => { const dateStr = new Date(q.date || q.id).toLocaleString('th-TH'); const div = document.createElement('div'); div.className = "bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex justify-between items-center text-sm"; div.innerHTML = `<div><div class="font-bold text-slate-700">${q.type}</div><div class="text-xs text-slate-400">${dateStr}</div></div><div class="text-right"><div class="font-bold text-sunny-red">${q.total}</div><button onclick='viewSavedQuote(${JSON.stringify(q)})' class="text-xs bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 mt-1 btn-bounce">ดูข้อมูล</button>${isOnlineMode ? `<button onclick="deleteOnlineQuote('${q.docId}')" class="text-xs text-white bg-red-400 hover:bg-red-500 px-2 py-1 rounded ml-1 btn-bounce">ลบ</button>` : `<button onclick="deleteOfflineQuote(${q.id})" class="text-xs text-white bg-red-400 hover:bg-red-500 px-2 py-1 rounded ml-1 btn-bounce">ลบ</button>`}</div>`; list.appendChild(div); }); }
         function viewSavedQuote(q) { calcMode = q.type === 'ม่านม้วนภายนอก' ? 'EXT' : 'INT'; calcItems = q.items; showQuotationModal(); closeConfig(); }
         function renderAdminMenu() { const list = document.getElementById('admin-menu-list'); list.innerHTML = ''; tempConfig.menus.forEach((menu, idx) => { list.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-3"><div class="flex items-center gap-3"><div class="p-2 bg-slate-100 rounded text-slate-500">${ICONS[menu.icon]||'?'}</div><div class="flex-grow space-y-1"><input type="text" value="${menu.name}" onchange="tempConfig.menus[${idx}].name=this.value" class="w-full p-1 border rounded text-sm font-bold"><input type="text" value="${menu.sub}" onchange="tempConfig.menus[${idx}].sub=this.value" class="w-full p-1 border rounded text-xs text-slate-500"></div><input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red"></div><div><label class="text-[10px] font-bold text-slate-400 mb-1 block">URL รูปพื้นหลัง (ใส่ได้สูงสุด 4 รูป คั่นด้วย , )</label><textarea rows="2" onchange="tempConfig.menus[${idx}].bgImage=this.value" class="w-full p-2 border rounded text-xs text-slate-600 bg-slate-50 focus:ring-1 focus:ring-sunny-red focus:outline-none" placeholder="เช่น https://img1.com, https://img2.com...">${menu.bgImage || ''}</textarea></div></div>`; }); }
-        function renderAdminNews() { const list = document.getElementById('admin-news-list'); list.innerHTML = ''; tempConfig.newsItems.forEach((item, idx) => { list.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200"><input type="text" value="${item.text}" onchange="tempConfig.newsItems[${idx}].text=this.value" class="w-full p-2 border rounded text-sm mb-2"><div class="flex gap-2"><button onclick="deleteNews(${idx})" class="text-red-500 text-xs font-bold">ลบ</button><label class="flex items-center gap-1 text-xs text-slate-500"><input type="checkbox" ${item.pinned?'checked':''} onchange="tempConfig.newsItems[${idx}].pinned=this.checked"> ปักหมุด</label></div></div>`; }); }
-        function addNewNewsItem() { tempConfig.newsItems.unshift({ id: Date.now(), text: "ข่าวใหม่...", date: new Date().toISOString(), pinned: false, badgeLabel: "NEW", badgeColor: "#E63946", badgeTextColor: "#FFFFFF", textColor: "#333333" }); renderAdminNews(); }
+        
         function deleteNews(idx) { tempConfig.newsItems.splice(idx, 1); renderAdminNews(); }
         function saveConfig() { tempConfig.appTitle = document.getElementById('conf-app-title').value; tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value); appConfig = tempConfig; applyTheme(appConfig.theme); if(isOnlineMode) db.collection("app_settings").doc("config").set(appConfig).then(()=>{showToast("บันทึกสำเร็จ");closeConfig();renderSidebar();}); else { localStorage.setItem('sunny_app_config',JSON.stringify(appConfig)); showToast("บันทึก(Offline)สำเร็จ"); closeConfig(); renderSidebar(); } }
         function renderAdminFeatures() { const list = document.getElementById('admin-features-list'); list.innerHTML = ''; Object.keys(tempConfig.features).forEach(key => { list.innerHTML += `<div class="flex justify-between items-center p-3 bg-white border rounded-xl"><span class="font-mono text-sm">${key}</span><input type="checkbox" ${tempConfig.features[key]?'checked':''} onchange="tempConfig.features['${key}']=this.checked" class="w-5 h-5 accent-purple-600"></div>`; }); }
@@ -485,6 +628,131 @@
             setTimeout(() => { const s = document.getElementById('intro-splash'); if(s) { s.classList.add('opacity-0', 'pointer-events-none'); setTimeout(() => s.remove(), 700); } }, 2000); 
             if(typeof checkPwaStatus === 'function') checkPwaStatus();
         });
+
+        // --- NEW: RICH TEXT & EMOJI UTILS ---
+        const EMOJI_LIST_RICH = ['📢', '🔥', '✨', '🎉', '⚠️', '🚨', '✅', '❌', '🟢', '🔴', '📅', '🕒', '📌', '📍', '💡', '🚚', '📦', '🎁', '🏷️', '🛒', '💬', '📞', '📧', '🏠', '🏢', '🛠️', '🔧', '⚙️', '📈', '💰', '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'];
+
+        function execCmd(command, value = null) {
+            document.execCommand(command, false, value);
+        }
+
+        function insertEmoji(idx, char, type = 'text') {
+            const editorId = type === 'badge' ? `badge-edit-${idx}` : `news-edit-${idx}`;
+            const pickerId = type === 'badge' ? `emoji-picker-badge-${idx}` : `emoji-picker-${idx}`;
+            const el = document.getElementById(editorId);
+            if(!el) return;
+            el.focus();
+            document.execCommand('insertText', false, char);
+            const event = new Event('input', { bubbles: true });
+            el.dispatchEvent(event);
+            document.getElementById(pickerId).classList.add('hidden');
+        }
+
+        // --- OVERRIDE: renderAdminNews ---
+        // Replacing only the renderAdminNews function to include the Rich Text Editor UI
+        function renderAdminNews() {
+            const list = document.getElementById('admin-news-list'); 
+            if(!list) return;
+            list.innerHTML = '';
+            
+            // Safe copy and sort
+            const sorted = [...(tempConfig.newsItems || [])].sort((a,b) => (b.pinned===a.pinned)? 0 : b.pinned? 1 : -1);
+            
+            sorted.forEach((item, idx) => {
+                const realIdx = tempConfig.newsItems.findIndex(x => x.id === item.id);
+                
+                let emojiGridText = EMOJI_LIST_RICH.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'text')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
+                let emojiGridBadge = EMOJI_LIST_RICH.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'badge')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
+
+                const createToolbar = (type) => `
+                    <div class="flex gap-1 mb-1.5 flex-wrap items-center">
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('bold')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">B</button>
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('italic')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] italic hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">I</button>
+                        <button onmousedown="event.preventDefault()" onclick="execCmd('underline')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] underline hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">U</button>
+                        <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                        <button onmousedown="event.preventDefault()" onclick="document.getElementById('emoji-picker-${type === 'badge' ? 'badge-' : ''}${realIdx}').classList.toggle('hidden')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50 hover:text-sunny-red">😀</button>
+                    </div>
+                `;
+
+                list.innerHTML += `
+                    <div class="p-4 rounded-xl border ${item.pinned ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} relative group shadow-sm mb-4">
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex-1 space-y-2">
+                                    <div class="flex justify-between items-end"><label class="text-[10px] text-slate-400 font-bold uppercase">ข้อความประกาศ</label></div>
+                                    ${createToolbar('text')}
+                                    <div class="relative">
+                                        <div id="news-edit-${realIdx}" contenteditable="true" class="w-full p-2 text-sm border rounded bg-white focus:outline-none focus:ring-1 focus:ring-sunny-red min-h-[60px] max-h-32 overflow-y-auto font-sans" oninput="tempConfig.newsItems[${realIdx}].text = this.innerHTML">${item.text}</div>
+                                        <div id="emoji-picker-${realIdx}" class="hidden absolute top-8 left-0 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64 mt-1">
+                                            <div class="flex justify-between items-center px-2 pb-2 border-b border-slate-100 mb-2"><span class="text-xs font-bold text-slate-400">เลือก Emoji</span><button onclick="document.getElementById('emoji-picker-${realIdx}').classList.add('hidden')" class="text-slate-300 hover:text-red-500 text-xs">✕</button></div>
+                                            <div class="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto custom-scrollbar">${emojiGridText}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2 pt-8">
+                                    <button onclick="togglePinNews(${realIdx})" class="${item.pinned?'text-white bg-sunny-red':'text-slate-400 bg-white border'} p-2 rounded-lg shadow-sm transition-all hover:scale-105" title="${item.pinned?'ยกเลิกปักหมุด':'ปักหมุด'}"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/></svg></button>
+                                    <button onclick="deleteNews(${realIdx})" class="text-slate-400 hover:text-red-500 bg-white border p-2 rounded-lg shadow-sm transition-all hover:scale-105" title="ลบ"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 border-t border-slate-200 pt-3 mt-1">
+                                <div class="relative">
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">ข้อความป้าย (Badge)</label>
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <button onmousedown="event.preventDefault()" onclick="document.getElementById('emoji-picker-badge-${realIdx}').classList.toggle('hidden')" class="p-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50">😀</button>
+                                    </div>
+                                    <div id="badge-edit-${realIdx}" contenteditable="true" class="w-full p-1.5 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-sunny-red font-bold text-slate-600 bg-white min-h-[30px] whitespace-nowrap overflow-hidden" oninput="tempConfig.newsItems[${realIdx}].badgeLabel = this.innerHTML">${item.badgeLabel}</div>
+                                    <div id="emoji-picker-badge-${realIdx}" class="hidden absolute bottom-full left-0 mb-1 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64">
+                                        <div class="flex justify-between items-center px-2 pb-2 border-b border-slate-100 mb-2"><span class="text-xs font-bold text-slate-400">Emoji (ป้าย)</span><button onclick="document.getElementById('emoji-picker-badge-${realIdx}').classList.add('hidden')" class="text-slate-300 hover:text-red-500 text-xs">✕</button></div>
+                                        <div class="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto custom-scrollbar">${emojiGridBadge}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีพื้นหลังป้าย</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" value="${item.badgeColor}" onchange="tempConfig.newsItems[${realIdx}].badgeColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                        <span class="text-[10px] text-slate-400 font-mono">${item.badgeColor}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีตัวอักษรป้าย</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" value="${item.badgeTextColor}" onchange="tempConfig.newsItems[${realIdx}].badgeTextColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                        <span class="text-[10px] text-slate-400 font-mono">${item.badgeTextColor}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-bold mb-1">สีข้อความหลัก</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" value="${item.textColor}" onchange="tempConfig.newsItems[${realIdx}].textColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                        <span class="text-[10px] text-slate-400 font-mono">${item.textColor}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-2 border-t border-slate-100 border-dashed">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-[10px] text-slate-400">วันที่:</label>
+                                    <input type="date" value="${item.date.split('T')[0]}" onchange="tempConfig.newsItems[${realIdx}].date=this.value" class="text-xs border rounded p-1 text-slate-500 bg-slate-50">
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+        
+        function addNewNewsItem() { 
+            if(!tempConfig.newsItems) tempConfig.newsItems = [];
+            tempConfig.newsItems.unshift({ 
+                id: Date.now(), 
+                text: "ประกาศใหม่...", 
+                date: new Date().toISOString(), 
+                pinned: false, 
+                badgeLabel: "NEW!", 
+                badgeColor: "#E63946", 
+                badgeTextColor: "#FFFFFF", 
+                textColor: "#334155" 
+            }); 
+            renderAdminNews(); 
+        }
     </script>
 </body>
 </html>
