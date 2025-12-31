@@ -60,6 +60,9 @@
         let db = null, auth = null;
         let currentUser = null; // Holds the logged in user object
         let configListenerSet = false;
+        let tempQuotes = []; // Store loaded quotes for easy access
+        let currentEditingId = null; // ID for local storage edit
+        let currentEditingDocId = null; // Doc ID for firestore edit
         
         const DEFAULT_CONFIG = {
             appTitle: "SUNNY",
@@ -879,12 +882,19 @@
         }
         
         function switchCalcMode(mode) {
+            // Function triggered by Sidebar Menu
+            openCalculator(mode);
+            toggleSidebar();
+        }
+
+        function openCalculator(mode) {
+            // Core logic to switch view
             calcMode = mode;
             document.getElementById('searchSection').classList.add('hidden');
             document.getElementById('calculatorSection').classList.remove('hidden');
             document.getElementById('calcTitleText').innerText = mode === 'EXT' ? 'คำนวณม่านม้วนภายนอก' : 'คำนวณราคาม่านม้วน';
             document.getElementById('calcTitleIcon').innerText = mode === 'EXT' ? '🪟' : '🏠';
-            toggleSidebar();
+            renderCalcTable(); // Ensure table is rendered
         }
         
         function addCalcItem() {
@@ -943,7 +953,13 @@
         }
         
         function removeCalcItem(idx) { calcItems.splice(idx, 1); renderCalcTable(); }
-        function clearCalc() { calcItems = []; renderCalcTable(); }
+        
+        function clearCalc() { 
+            calcItems = []; 
+            currentEditingId = null;
+            currentEditingDocId = null;
+            renderCalcTable(); 
+        }
 
         // --- QUOTATION ---
         function showQuotationModal() {
@@ -971,35 +987,99 @@
         function captureQuotation() { html2canvas(document.querySelector("#quotationModal > div"), { scale: 2, useCORS: true }).then(canvas => { const link = document.createElement('a'); link.download = `Sunny_Quote_${Date.now()}.png`; link.href = canvas.toDataURL(); link.click(); }); }
         
         function saveCurrentQuotation() {
+            // Check Database Connection for Members
             const user = currentUser;
             const isMember = user && !user.isAnonymous;
-            const msg = isMember ? 'ยืนยันบันทึกเข้าระบบ (บัญชีของคุณ)?' : 'ยืนยันบันทึกใบเสนอราคา (ในเครื่องนี้)?';
             
-            if (!confirm(msg)) return;
-            
-            const qData = { 
-                id: Date.now(), 
-                date: new Date().toISOString(), 
-                type: calcMode === 'EXT' ? 'ม่านม้วนภายนอก' : 'ม่านม้วน', 
-                total: document.getElementById('qGrandTotal').innerText, 
-                items: calcItems 
-            };
-            
-            if (isMember) {
-                // Save to Cloud (With User ID)
-                qData.uid = user.uid;
-                qData.ownerEmail = user.email;
-                qData.ownerName = user.displayName;
+            if (isMember && (!db || !auth)) {
+                alert('ระบบกำลังเชื่อมต่อฐานข้อมูล กรุณารอสักครู่แล้วลองใหม่...');
+                return;
+            }
+
+            try {
+                // Safeguard calcItems
+                if (!calcItems || !Array.isArray(calcItems) || calcItems.length === 0) {
+                    alert('ไม่พบรายการสินค้า กรุณาลองคำนวณใหม่');
+                    return;
+                }
+
+                // Determine Mode (New or Update)
+                let isUpdate = false;
+                let saveAsNew = false;
+
+                if (currentEditingId || currentEditingDocId) {
+                    // Editing Mode
+                    if (confirm("คุณกำลังแก้ไขรายการเดิม\nกด [ตกลง] เพื่อบันทึกทับรายการเดิม (Update)\nกด [ยกเลิก] เพื่อบันทึกเป็นรายการใหม่ (Save as New)")) {
+                        isUpdate = true;
+                    } else {
+                        saveAsNew = true;
+                    }
+                } else {
+                    // New Mode
+                    const msg = isMember ? 'ยืนยันบันทึกเข้าระบบ (บัญชีของคุณ)?' : 'ยืนยันบันทึกใบเสนอราคา (ในเครื่องนี้)?';
+                    if (!confirm(msg)) return;
+                    saveAsNew = true;
+                }
+
+                // Prepare Data
+                const finalId = (isUpdate && currentEditingId) ? currentEditingId : Date.now();
+                const qData = { 
+                    id: finalId,
+                    date: new Date().toISOString(), 
+                    type: calcMode === 'EXT' ? 'ม่านม้วนภายนอก' : 'ม่านม้วน', 
+                    total: document.getElementById('qGrandTotal').innerText, 
+                    items: JSON.parse(JSON.stringify(calcItems)) // Deep copy to prevent reference issues
+                };
                 
-                db.collection("quotations").add(qData).then(() => { 
-                    showToast("บันทึกเข้าระบบแล้ว"); 
-                }).catch(e => { console.error(e); alert("Save Error: " + e.message); });
-            } else {
-                // Save to LocalStorage (Offline / Guest)
-                let saved = JSON.parse(localStorage.getItem('sunny_quotations')) || [];
-                saved.push(qData);
-                localStorage.setItem('sunny_quotations', JSON.stringify(saved));
-                showToast("บันทึก (Guest) เรียบร้อย");
+                if (isMember) {
+                    // Cloud Save
+                    qData.uid = user.uid;
+                    qData.ownerEmail = user.email;
+                    qData.ownerName = user.displayName;
+                    
+                    if (isUpdate && currentEditingDocId) {
+                        db.collection("quotations").doc(currentEditingDocId).update(qData).then(() => { 
+                            showToast("แก้ไขข้อมูลเรียบร้อย");
+                            closeQuotation();
+                            clearCalc(); // Clear to prevent double save confusion
+                        }).catch(e => { console.error(e); alert("เกิดข้อผิดพลาดในการอัพเดท: " + e.message); });
+                    } else {
+                        // Save as new (remove docId if it existed from edit mode)
+                        delete qData.docId; 
+                        db.collection("quotations").add(qData).then(() => { 
+                            showToast("บันทึกรายการใหม่เรียบร้อย");
+                            closeQuotation();
+                            clearCalc();
+                        }).catch(e => { console.error(e); alert("เกิดข้อผิดพลาดในการบันทึก: " + e.message); });
+                    }
+                } else {
+                    // Local Storage Save
+                    let saved = [];
+                    try {
+                        saved = JSON.parse(localStorage.getItem('sunny_quotations')) || [];
+                    } catch(e) { saved = []; }
+
+                    if (isUpdate && currentEditingId) {
+                        const idx = saved.findIndex(x => x.id === currentEditingId);
+                        if (idx !== -1) {
+                            saved[idx] = qData;
+                            showToast("แก้ไขข้อมูล (Guest) เรียบร้อย");
+                        } else {
+                            // ID not found (maybe deleted), save as new
+                            saved.push(qData);
+                            showToast("บันทึกใหม่ (Guest) เรียบร้อย");
+                        }
+                    } else {
+                        saved.push(qData);
+                        showToast("บันทึก (Guest) เรียบร้อย");
+                    }
+                    localStorage.setItem('sunny_quotations', JSON.stringify(saved));
+                    closeQuotation();
+                    clearCalc();
+                }
+            } catch (e) {
+                console.error("Critical Save Error:", e);
+                alert("เกิดข้อผิดพลาดร้ายแรง: " + e.message);
             }
         }
         
@@ -1054,6 +1134,7 @@
 
             // Sort Descending (Newest first)
             quotes.sort((a,b) => (b.id || 0) - (a.id || 0));
+            tempQuotes = quotes; // Store for access
 
             if (quotes.length === 0) {
                 list.innerHTML = `<div class="text-center text-slate-400 py-8 flex flex-col items-center"><span class="text-4xl mb-2 opacity-30">📭</span>ไม่มีรายการบันทึก</div>`;
@@ -1061,7 +1142,7 @@
             }
 
             list.innerHTML = '';
-            quotes.forEach(q => {
+            quotes.forEach((q, index) => {
                 const dateStr = new Date(q.date || q.id).toLocaleString('th-TH');
                 const ownerInfo = (mode === 'all' && q.ownerName) ? `<div class="text-[10px] text-sunny-red bg-red-50 px-1 rounded inline-block mb-1">👤 ${q.ownerName}</div>` : '';
                 
@@ -1076,7 +1157,7 @@
                     <div class="text-right">
                         <div class="font-black text-lg text-sunny-red">${q.total}</div>
                         <div class="flex gap-2 justify-end mt-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick='viewSavedQuote(${JSON.stringify(q).replace(/'/g, "&#39;")})' class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded-lg font-bold">ดู</button>
+                            <button onclick='loadQuoteByIndex(${index})' class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded-lg font-bold">แก้ไข/ดู</button>
                             <button onclick="${(mode === 'all' || (user && !user.isAnonymous)) ? `deleteOnlineQuote('${q.docId}', '${containerId}', '${mode}')` : `deleteOfflineQuote(${q.id})`}" class="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-500 text-xs rounded-lg font-bold">ลบ</button>
                         </div>
                     </div>
@@ -1085,12 +1166,27 @@
             });
         }
         
-        function viewSavedQuote(q) {
+        function loadQuoteByIndex(index) {
+            const q = tempQuotes[index];
+            if(!q) return;
+            
+            // Restore Data & Track IDs for editing
             calcMode = (q.type && q.type.includes('ภายนอก')) ? 'EXT' : 'INT';
-            calcItems = q.items;
+            calcItems = q.items || []; // Safety check for items
+            currentEditingId = q.id;
+            currentEditingDocId = q.docId || null;
+            
+            // Close Modals
             document.getElementById('historyModal').classList.add('hidden');
-            showQuotationModal();
             closeConfig();
+            
+            // Switch UI to Calculator (Edit Mode)
+            openCalculator(calcMode);
+            
+            // Show Quotation View (Preview)
+            showQuotationModal();
+            
+            showToast("โหลดข้อมูลเรียบร้อย");
         }
         
         function openHistoryModal() {
