@@ -274,9 +274,25 @@
         .wooden-pattern { background-image: repeating-linear-gradient(180deg, rgba(210, 180, 140, 0.05) 0px, rgba(210, 180, 140, 0.05) 15px, rgba(0, 0, 0, 0.02) 16px, transparent 16px, transparent 24px); }
         .header-custom-bg { position: relative; min-height: 280px; }
         @media (min-width: 768px) { .header-custom-bg { min-height: 380px; } }
-        .bg-slideshow-container { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; border-radius: 2rem; z-index: 0; }
-        .bg-slide-item { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center center; opacity: 0; transition: opacity 2.5s ease-in-out; }
-        .bg-slide-item.active { opacity: 1; transform: scale(1.05); transition: opacity 2.5s ease-in-out, transform 10s linear; }
+        
+        /* UPDATED: BENTO GRID BG STYLES */
+        .bento-grid-bg { 
+            position: absolute; inset: 0; width: 100%; height: 100%; 
+            z-index: 0; overflow: hidden; border-radius: 2rem; 
+        }
+        
+        .bg-slide-item { 
+            position: absolute; inset: 0; width: 100%; height: 100%; 
+            background-size: cover; background-position: center center; 
+            opacity: 0; 
+            transition: opacity 3s cubic-bezier(0.4, 0, 0.2, 1); /* Slower, smoother fade */
+        }
+        .bg-slide-item.active { 
+            opacity: 1; 
+            transform: scale(1.05); 
+            transition: opacity 3s cubic-bezier(0.4, 0, 0.2, 1), transform 15s linear; 
+        }
+
         .header-custom-bg::after { display: none; }
         
         .header-content-glass { 
@@ -741,8 +757,9 @@
             searchProduct();
         }
 
-        // --- BACKGROUND SLIDESHOW ---
-        let slideshowInterval = null; 
+        // --- BACKGROUND BENTO GRID SLIDESHOW (UPDATED) ---
+        let slideshowIntervals = []; // Store multiple intervals
+
         function switchSystem(system) {
             currentSystem = system;
             document.getElementById('searchSection').classList.remove('hidden');
@@ -757,39 +774,89 @@
             const header = document.getElementById('headerSection');
             const headerContent = document.getElementById('headerContentWrapper');
             
-            if (slideshowInterval) clearInterval(slideshowInterval);
-            const oldSlides = header.querySelector('.bg-slideshow-container');
-            if (oldSlides) oldSlides.remove();
+            // Clear existing intervals and elements
+            slideshowIntervals.forEach(clearInterval);
+            slideshowIntervals = [];
             
-            if (menu.bgImage && menu.bgImage.trim() !== '') {
-                const images = menu.bgImage.split(',').map(url => url.trim()).filter(url => url !== '').slice(0, 4);
-                
+            const oldBento = header.querySelector('.bento-grid-bg');
+            if (oldBento) oldBento.remove();
+            
+            // Logic to support both old bgImage and new split images
+            let hasImages = false;
+            const slotImages = [[], [], []];
+
+            // Check if we have the new separated format (bgImage1, bgImage2, bgImage3)
+            if (menu.bgImage1 || menu.bgImage2 || menu.bgImage3) {
+                hasImages = true;
+                if(menu.bgImage1) slotImages[0] = menu.bgImage1.split(',').map(url => url.trim()).filter(url => url !== '');
+                if(menu.bgImage2) slotImages[1] = menu.bgImage2.split(',').map(url => url.trim()).filter(url => url !== '');
+                if(menu.bgImage3) slotImages[2] = menu.bgImage3.split(',').map(url => url.trim()).filter(url => url !== '');
+            } else if (menu.bgImage && menu.bgImage.trim() !== '') {
+                // Fallback: Legacy format
+                hasImages = true;
+                const images = menu.bgImage.split(',').map(url => url.trim()).filter(url => url !== '');
+                if (images.length > 0) {
+                     images.forEach((img, i) => slotImages[i % 3].push(img));
+                     // Fallback: Ensure every slot has at least one image if total images < 3
+                     if(slotImages[1].length === 0 && images[0]) slotImages[1].push(images[0]);
+                     if(slotImages[2].length === 0 && images[0]) slotImages[2].push(images[0]);
+                }
+            }
+
+            if (hasImages) {
                 header.classList.add('header-custom-bg');
                 header.classList.remove('wooden-pattern');
                 headerContent.classList.add('header-content-glass');
                 header.style.backgroundImage = '';
                 
-                const slideContainer = document.createElement('div');
-                slideContainer.className = 'bg-slideshow-container';
+                // Create Bento Grid Container (3 Columns)
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'bento-grid-bg grid grid-cols-3 gap-0.5 bg-white/20'; 
                 
-                images.forEach((url, index) => {
-                    const slide = document.createElement('div');
-                    slide.className = `bg-slide-item ${index === 0 ? 'active' : ''}`;
-                    slide.style.backgroundImage = `url('${url}')`;
-                    slideContainer.appendChild(slide);
+                // Build Columns
+                [0, 1, 2].forEach(colIndex => {
+                    const colDiv = document.createElement('div');
+                    colDiv.className = 'relative w-full h-full overflow-hidden bg-slate-100/50'; 
+
+                    const colImgs = slotImages[colIndex];
+                    
+                    if (colImgs.length > 0) {
+                        // Create Slides for this Column
+                        colImgs.forEach((url, imgIdx) => {
+                            const slide = document.createElement('div');
+                            slide.className = `bg-slide-item ${imgIdx === 0 ? 'active' : ''}`;
+                            slide.style.backgroundImage = `url('${url}')`;
+                            colDiv.appendChild(slide);
+                        });
+                        
+                        // Animation Logic for this Column (Staggered)
+                        if (colImgs.length > 1) {
+                            let cur = 0;
+                            
+                            // Delay start based on column index
+                            setTimeout(() => {
+                                const interval = setInterval(() => {
+                                    const slides = colDiv.querySelectorAll('.bg-slide-item');
+                                    if(slides.length === 0) return;
+                                    
+                                    slides[cur].classList.remove('active');
+                                    cur = (cur + 1) % slides.length;
+                                    slides[cur].classList.add('active');
+                                }, 5000 + (colIndex * 1500)); // Different speeds/offsets
+                                
+                                slideshowIntervals.push(interval);
+                            }, colIndex * 800);
+                        }
+                    } else {
+                        // No image for this slot, maybe show pattern or nothing
+                        colDiv.className += ' wooden-pattern opacity-50';
+                    }
+                    
+                    gridContainer.appendChild(colDiv);
                 });
                 
-                header.insertBefore(slideContainer, header.firstChild);
-                
-                if (images.length > 1) {
-                    let currentSlide = 0;
-                    const slides = slideContainer.querySelectorAll('.bg-slide-item');
-                    slideshowInterval = setInterval(() => {
-                        slides[currentSlide].classList.remove('active');
-                        currentSlide = (currentSlide + 1) % slides.length;
-                        slides[currentSlide].classList.add('active');
-                    }, 5000); 
-                }
+                header.insertBefore(gridContainer, header.firstChild);
+
             } else {
                 header.style.backgroundImage = '';
                 header.classList.remove('header-custom-bg');
@@ -1216,9 +1283,23 @@
                             </div>
                             <input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red">
                         </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 mb-1 block">URL รูปพื้นหลัง (ใส่ได้สูงสุด 4 รูป คั่นด้วย , )</label>
-                            <textarea rows="2" onchange="tempConfig.menus[${idx}].bgImage=this.value" class="w-full p-2 border rounded text-xs text-slate-600 bg-slate-50 focus:ring-1 focus:ring-sunny-red focus:outline-none" placeholder="เช่น https://img1.com, https://img2.com...">${menu.bgImage || ''}</textarea>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 block">จัดการภาพพื้นหลัง (แยก 3 ช่องอิสระ)</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 font-bold">ช่องซ้าย (Left)</span>
+                                    <textarea rows="3" onchange="tempConfig.menus[${idx}].bgImage1=this.value" class="w-full p-2 border rounded text-[10px] text-slate-600 bg-slate-50 focus:ring-1 focus:ring-sunny-red focus:outline-none resize-none" placeholder="URL รูป...">${menu.bgImage1 || ''}</textarea>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 font-bold">ช่องกลาง (Center)</span>
+                                    <textarea rows="3" onchange="tempConfig.menus[${idx}].bgImage2=this.value" class="w-full p-2 border rounded text-[10px] text-slate-600 bg-slate-50 focus:ring-1 focus:ring-sunny-red focus:outline-none resize-none" placeholder="URL รูป...">${menu.bgImage2 || ''}</textarea>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 font-bold">ช่องขวา (Right)</span>
+                                    <textarea rows="3" onchange="tempConfig.menus[${idx}].bgImage3=this.value" class="w-full p-2 border rounded text-[10px] text-slate-600 bg-slate-50 focus:ring-1 focus:ring-sunny-red focus:outline-none resize-none" placeholder="URL รูป...">${menu.bgImage3 || ''}</textarea>
+                                </div>
+                            </div>
+                            <div class="text-[9px] text-slate-400">* ใส่หลายรูปคั่นด้วยเครื่องหมายจุลภาค (,) เพื่อให้สไลด์วนลูปในช่องนั้นๆ</div>
                         </div>
                     </div>`;
             });
