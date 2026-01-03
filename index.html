@@ -552,6 +552,22 @@
             <div id="calculatorSection" class="hidden animate-fade-in-up">
                 <div class="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl border border-slate-100">
                     <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4"><div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center text-2xl shadow-sm" id="calcTitleIcon">🪟</div><div><h2 class="text-2xl font-black text-slate-800" id="calcTitleText">คำนวณราคา</h2><p class="text-xs text-slate-400">ระบบคำนวณราคาเบื้องต้น</p></div></div>
+                    
+                    <!-- NEW: System Selector for ALU25 -->
+                    <div id="calcSystemSelectContainer" class="hidden mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <label class="block text-sm font-bold text-slate-600 mb-3">เลือกระบบ:</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-sunny-red transition-all">
+                                <input type="radio" name="aluSystem" value="STD" checked class="w-5 h-5 accent-sunny-red">
+                                <span class="font-bold text-slate-700">ระบบธรรมดา</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-sunny-red transition-all">
+                                <input type="radio" name="aluSystem" value="CHAIN" class="w-5 h-5 accent-sunny-red">
+                                <span class="font-bold text-slate-700">ระบบโซ่วน</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                          <div class="space-y-4">
                             <div><label class="block text-sm font-bold text-slate-600 mb-1">กว้าง (W)</label><input type="number" id="calcW" class="w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:border-sunny-red focus:ring-4 focus:ring-red-50 font-bold text-lg" placeholder="0.00 หรือ 000"></div>
@@ -559,7 +575,7 @@
                             
                          </div>
                          <div class="space-y-4">
-                            <div><label class="block text-sm font-bold text-slate-600 mb-1">ราคา/ตร.ล.</label><input type="number" id="calcPrice" class="w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:border-sunny-red focus:ring-4 focus:ring-red-50 font-bold text-lg" placeholder="ระบุราคา"></div>
+                            <div><label class="block text-sm font-bold text-slate-600 mb-1">ราคา/ชุด (หรือตร.ล.)</label><input type="text" id="calcPrice" class="w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:border-sunny-red focus:ring-4 focus:ring-red-50 font-bold text-lg" placeholder="ระบุราคา"></div>
                             <div><label class="block text-sm font-bold text-slate-600 mb-1">จำนวน (ชุด)</label><input type="number" id="calcQty" value="1" class="w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:border-sunny-red focus:ring-4 focus:ring-red-50 font-bold text-lg"></div>
                             <button onclick="addCalcItem()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-black transition-all btn-bounce mt-4">+ เพิ่มรายการ</button>
                          </div>
@@ -609,6 +625,10 @@
         const ROLLER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1019928538&single=true&output=csv";
         const ALU_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=1880232984&single=true&output=csv";
         
+        // NEW CSVs for ALU25
+        const ALU25_STD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=684509454&single=true&output=csv";
+        const ALU25_CHAIN_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=374964719&single=true&output=csv";
+
         const ICONS = {
             wood: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>',
             alu: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>',
@@ -616,7 +636,9 @@
             roller: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>'
         };
         
-        let currentSystem = 'WOOD'; let cache = { WOOD: null, PVC: null, ROLLER: null, ALU: null };
+        let currentSystem = 'WOOD'; 
+        let cache = { WOOD: null, PVC: null, ROLLER: null, ALU: null };
+        let alu25Cache = { STD: null, CHAIN: null };
 
         function isDateNew(dateStr) { if(!dateStr) return false; return (new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24) < 7; }
         function formatDate(dateStr) { if(!dateStr) return ''; return new Date(dateStr).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); }
@@ -627,6 +649,23 @@
         function parseAluCSV(t){const l=t.trim().split('\n'),d={};for(let i=1;i<l.length;i++){const r=l[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/),cr=r.map(c=>c?c.trim().replace(/^"|"$/g,''):'');let c=cr[0];if(c){c=c.toUpperCase();if(!isValidCode(c))continue;const v=parseInt(cr[2].replace(/,/g,'')||0,10);if(!d[c])d[c]={name:cr[1]||'ไม่ระบุชื่อ',stocks:{'คงเหลือ':v}};else d[c].stocks['คงเหลือ']+=v}}return d}
         function parsePvcCSV(t){const l=t.trim().split('\n'),d={};const hr=l[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c=>c.trim().replace(/^"|"$/g,''));const hm=[];for(let i=2;i<hr.length;i++)if(hr[i]&&!isNaN(parseInt(hr[i])))hm.push({index:i,label:hr[i]});for(let i=2;i<l.length;i++){const r=l[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/),cr=r.map(c=>c?c.trim().replace(/^"|"$/g,''):'');let c=cr[0];if(c){c=c.toUpperCase();if(!isValidCode(c))continue;if(!d[c])d[c]={name:cr[1]||'ไม่ระบุชื่อ',stocks:{}};hm.forEach(h=>{if(cr.length>h.index)d[c].stocks[h.label]=(d[c].stocks[h.label]||0)+parseInt(cr[h.index].replace(/,/g,'')||0,10)})}}return d}
         function parseRollerCSV(t){const l=t.trim().split('\n'),d={};for(let i=3;i<l.length;i++){const r=l[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/),cr=r.map(c=>c?c.trim().replace(/^"|"$/g,''):'');let c=cr[0];if(c){c=c.toUpperCase();if(!isValidCode(c))continue;const v=parseInt(cr[2].replace(/,/g,'')||0,10);if(!d[c])d[c]={name:cr[1]||'ไม่ระบุชื่อ',stocks:{'คงเหลือ':v}};else d[c].stocks['คงเหลือ']+=v}}return d}
+
+        // New Parser for ALU25 (Col A: W*H, Col B: Price)
+        function parsePriceCSV(text) {
+            const lines = text.trim().split('\n');
+            const data = {};
+            lines.forEach(line => {
+                const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
+                if (cols.length >= 2) {
+                    let size = cols[0];
+                    let price = parseFloat(cols[1].replace(/,/g, '')); // Changed from parseInt to parseFloat
+                    if (size && !isNaN(price)) {
+                        data[size] = price;
+                    }
+                }
+            });
+            return data;
+        }
 
         // --- DATA FETCHING ---
         async function fetchData(sysId) {
@@ -643,6 +682,23 @@
                 }
                 return parsedData;
             } catch (e) { console.error(e); throw e; }
+        }
+
+        async function loadAlu25PriceData() {
+            if (!alu25Cache.STD) {
+                try {
+                    const res = await fetch(ALU25_STD_URL);
+                    const text = await res.text();
+                    alu25Cache.STD = parsePriceCSV(text);
+                } catch(e) { console.error("Error loading ALU STD", e); }
+            }
+            if (!alu25Cache.CHAIN) {
+                try {
+                    const res = await fetch(ALU25_CHAIN_URL);
+                    const text = await res.text();
+                    alu25Cache.CHAIN = parsePriceCSV(text);
+                } catch(e) { console.error("Error loading ALU CHAIN", e); }
+            }
         }
 
         async function updateProductList() {
@@ -989,53 +1045,133 @@
             calcMode = mode;
             document.getElementById('searchSection').classList.add('hidden');
             document.getElementById('calculatorSection').classList.remove('hidden');
-            document.getElementById('calcTitleText').innerText = mode === 'EXT' ? 'คำนวณม่านม้วนภายนอก' : 'คำนวณราคาม่านม้วน';
-            document.getElementById('calcTitleIcon').innerText = mode === 'EXT' ? '🪟' : '🏠';
+            
+            const titleText = document.getElementById('calcTitleText');
+            const titleIcon = document.getElementById('calcTitleIcon');
+            const priceInput = document.getElementById('calcPrice');
+            const sysSelect = document.getElementById('calcSystemSelectContainer');
+
+            if (mode === 'EXT') {
+                titleText.innerText = 'คำนวณม่านม้วนภายนอก';
+                titleIcon.innerText = '🪟';
+                sysSelect.classList.add('hidden');
+                priceInput.readOnly = false;
+                priceInput.placeholder = "ระบุราคา";
+                priceInput.value = "";
+            } else if (mode === 'INT') {
+                titleText.innerText = 'คำนวณราคาม่านม้วน';
+                titleIcon.innerText = '🏠';
+                sysSelect.classList.add('hidden');
+                priceInput.readOnly = false;
+                priceInput.placeholder = "ระบุราคา";
+                priceInput.value = "";
+            } else if (mode === 'ALU25') {
+                titleText.innerText = 'คำนวณมู่ลี่อลูมิเนียม 25mm.';
+                titleIcon.innerText = '📏';
+                sysSelect.classList.remove('hidden');
+                priceInput.readOnly = true;
+                priceInput.placeholder = "รอค้นหาอัตโนมัติ...";
+                priceInput.value = "";
+                loadAlu25PriceData(); // Fetch Data on Open
+            }
+
             renderCalcTable(); // Ensure table is rendered
         }
         
         function addCalcItem() {
             const wInput = parseFloat(document.getElementById('calcW').value);
             const hInput = parseFloat(document.getElementById('calcH').value);
-            const price = parseFloat(document.getElementById('calcPrice').value);
             const qty = parseInt(document.getElementById('calcQty').value) || 1;
             
-            if(!wInput || !hInput || !price) { alert('กรุณากรอกข้อมูลให้ครบถ้วน'); return; }
-            
-            // Auto-detect unit logic: 
-            // If value >= 10, assume user entered CM -> convert to M (divide by 100)
-            // If value < 10, assume user entered M -> keep as is
-            const w = (wInput >= 10) ? wInput / 100 : wInput;
-            const h = (hInput >= 10) ? hInput / 100 : hInput;
-            
-            // For display and storage, we normalize everything to Meters ('m')
-            const displayUnit = 'm';
+            if(!wInput || !hInput) { alert('กรุณากรอกความกว้างและความสูง'); return; }
 
-            const f = appConfig.calcSettings.factors;
-            
-            let rawArea = w * h * f.fabricMult;
-            let finalArea = rawArea < f.minArea ? f.minArea : rawArea;
-            let fabricCost = finalArea * price;
+            let price = 0;
             let totalPerSet = 0;
             let details = ``;
-            
-            if(calcMode === 'EXT') {
-                const topRail = w * f.railTop;
-                const botRail = w * f.railBot;
-                const sling = h * f.sling * 2;
-                totalPerSet = fabricCost + f.eqExt + topRail + botRail + sling;
-                details = `ราคาผ้า: ${w.toFixed(2)}x${h.toFixed(2)}x${f.fabricMult} = ${rawArea.toFixed(2)} ${rawArea<f.minArea?`(ปรับเป็น ${f.minArea})`:''} x ${price} = ${fabricCost.toLocaleString()} บ.<br>ค่าอุปกรณ์: ${f.eqExt.toLocaleString()} บ.<br>รางบน: ${w.toFixed(2)}x${f.railTop} = ${topRail.toLocaleString()} บ.<br>รางล่าง: ${w.toFixed(2)}x${f.railBot} = ${botRail.toLocaleString()} บ.<br>สลิง: ${h.toFixed(2)}x${f.sling}x2 = ${sling.toLocaleString()} บ.`;
+            let finalW = wInput;
+            let finalH = hInput;
+            let displayUnit = 'm';
+            let systemLabel = ''; // New variable for labeling
+
+            // --- ALU 25 Logic ---
+            if (calcMode === 'ALU25') {
+                // Rounding Logic: Ends 1-4 down to 0, 5-9 up to 10
+                const roundCustom = (val) => Math.round(val / 10) * 10;
+                
+                // Keep raw for display (Requirement: Show actual size user entered)
+                // finalW/finalH used for Lookup only
+                let lookupW = roundCustom(wInput);
+                let lookupH = roundCustom(hInput);
+                
+                finalW = wInput; // Update finalW to hold raw input for storage/display
+                finalH = hInput; 
+                displayUnit = 'cm'; // Usually ALU is in cm
+
+                // Lookup Key
+                const key = `${lookupW}*${lookupH}`;
+                
+                // Get selected system
+                const sysType = document.querySelector('input[name="aluSystem"]:checked').value;
+                const db = sysType === 'STD' ? alu25Cache.STD : alu25Cache.CHAIN;
+
+                // Set Label (Requirement: Show if Standard or Chain)
+                systemLabel = sysType === 'STD' ? 'มู่ลี่อลูมิเนียม (ธรรมดา)' : 'มู่ลี่อลูมิเนียม (โซ่วน)';
+
+                if (!db || !db[key]) {
+                    alert(`ไม่พบราคาสำหรับขนาด ${lookupW}x${lookupH} (ปัดเศษจาก ${wInput}x${hInput}) ในระบบ ${sysType === 'STD' ? 'ธรรมดา' : 'โซ่วน'}`);
+                    return;
+                }
+
+                price = db[key];
+                totalPerSet = price; // Price in sheet is per set
+                
+                // Update details to match
+                details = `ขนาดจริง: ${wInput}x${hInput} cm<br>ปรับขนาดคำนวณ: ${lookupW}x${lookupH} cm<br>ระบบ: ${sysType==='STD'?'ธรรมดา':'โซ่วน'}<br>ราคาตามตาราง: ${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บ.`;
+                
+                // Update the readonly price input just for visual confirmation (Show decimals)
+                document.getElementById('calcPrice').value = price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
             } else {
-                totalPerSet = fabricCost;
-                details = `ราคาผ้า: ${w.toFixed(2)}x${h.toFixed(2)}x${f.fabricMult} = ${rawArea.toFixed(2)} ${rawArea<f.minArea?`(ปรับเป็น ${f.minArea})`:''} x ${price} = ${fabricCost.toLocaleString()} บ.`;
+                // --- Existing Logic (EXT/INT) ---
+                price = parseFloat(document.getElementById('calcPrice').value);
+                if(!price) { alert('กรุณาระบุราคา'); return; }
+
+                // Labeling for Roller (Requirement: Show Roller vs Ext Roller)
+                systemLabel = calcMode === 'EXT' ? 'ม่านม้วนภายนอก' : 'ม่านม้วน';
+
+                // Auto-detect unit logic: 
+                // If value >= 10, assume user entered CM -> convert to M (divide by 100)
+                const wM = (wInput >= 10) ? wInput / 100 : wInput;
+                const hM = (hInput >= 10) ? hInput / 100 : hInput;
+                finalW = wM.toFixed(2);
+                finalH = hM.toFixed(2);
+                displayUnit = 'm';
+
+                const f = appConfig.calcSettings.factors;
+                let rawArea = wM * hM * f.fabricMult;
+                let finalArea = rawArea < f.minArea ? f.minArea : rawArea;
+                let fabricCost = finalArea * price;
+
+                if(calcMode === 'EXT') {
+                    const topRail = wM * f.railTop;
+                    const botRail = wM * f.railBot;
+                    const sling = hM * f.sling * 2;
+                    totalPerSet = fabricCost + f.eqExt + topRail + botRail + sling;
+                    details = `ราคาผ้า: ${finalW}x${finalH}x${f.fabricMult} = ${rawArea.toFixed(2)} ${rawArea<f.minArea?`(ปรับเป็น ${f.minArea})`:''} x ${price} = ${fabricCost.toLocaleString()} บ.<br>ค่าอุปกรณ์: ${f.eqExt.toLocaleString()} บ.<br>รางบน: ${finalW}x${f.railTop} = ${topRail.toLocaleString()} บ.<br>รางล่าง: ${finalW}x${f.railBot} = ${botRail.toLocaleString()} บ.<br>สลิง: ${finalH}x${f.sling}x2 = ${sling.toLocaleString()} บ.`;
+                } else {
+                    totalPerSet = fabricCost;
+                    details = `ราคาผ้า: ${finalW}x${finalH}x${f.fabricMult} = ${rawArea.toFixed(2)} ${rawArea<f.minArea?`(ปรับเป็น ${f.minArea})`:''} x ${price} = ${fabricCost.toLocaleString()} บ.`;
+                }
             }
             
             const grandTotal = totalPerSet * qty;
-            // Push normalized values (w, h) so the table shows what system calculated
-            calcItems.push({ w: w.toFixed(2), h: h.toFixed(2), unit: displayUnit, price: price, qty: qty, totalPerSet: totalPerSet, grandTotal: grandTotal, details: details });
+            
+            // Add systemLabel to the object
+            calcItems.push({ w: finalW, h: finalH, unit: displayUnit, price: price, qty: qty, totalPerSet: totalPerSet, grandTotal: grandTotal, details: details, label: systemLabel });
             renderCalcTable();
             document.getElementById('calcW').value = '';
             document.getElementById('calcH').value = '';
+            if(calcMode !== 'ALU25') document.getElementById('calcPrice').value = ''; 
         }
         
         function renderCalcTable() {
@@ -1046,10 +1182,13 @@
                 sum += item.grandTotal;
                 tbody.innerHTML += `
                     <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                        <td class="px-3 py-3 font-bold">ชุดที่ ${idx+1}</td>
+                        <td class="px-3 py-3 font-bold">
+                            ชุดที่ ${idx+1}
+                            <div class="text-xs text-slate-400 font-normal">${item.label || ''}</div>
+                        </td>
                         <td class="px-3 py-3 text-slate-500">${item.w}x${item.h} ${item.unit}</td>
-                        <td class="px-3 py-3 text-right">${item.totalPerSet.toLocaleString()}</td>
-                        <td class="px-3 py-3 text-right font-bold">${item.grandTotal.toLocaleString()}</td>
+                        <td class="px-3 py-3 text-right">${item.totalPerSet.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td class="px-3 py-3 text-right font-bold">${item.grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                         <td class="px-3 py-3 text-right"><button onclick="removeCalcItem(${idx})" class="text-red-300 hover:text-red-500 btn-bounce">x</button></td>
                     </tr>`;
             });
@@ -1071,7 +1210,15 @@
             if(calcItems.length === 0) { alert('ไม่มีรายการคำนวณ'); return; }
             document.getElementById('quotationModal').classList.remove('hidden');
             document.getElementById('qDate').innerText = new Date().toLocaleDateString('th-TH');
-            document.getElementById('qType').innerText = calcMode === 'EXT' ? 'ม่านม้วนภายนอก' : 'ม่านม้วน';
+            
+            let typeLabel = 'ใบเสนอราคา'; 
+            // Simplified the type header since individual items now carry labels, but keep the header as generic or mixture.
+            // Original code set header based on LAST calcMode.
+            if(calcMode === 'EXT') typeLabel = 'ม่านม้วนภายนอก';
+            else if(calcMode === 'ALU25') typeLabel = 'มู่ลี่อลูมิเนียม';
+            else typeLabel = 'ม่านม้วน';
+            
+            document.getElementById('qType').innerText = typeLabel;
             
             const tbody = document.getElementById('qBody');
             const detailContent = document.getElementById('qDetailContent');
@@ -1081,10 +1228,12 @@
             
             calcItems.forEach((item, idx) => {
                 sum += item.grandTotal;
-                tbody.innerHTML += `<tr><td class="py-2"><span class="font-bold">ชุดที่ ${idx+1}</span> <span class="text-xs text-slate-500 ml-2">(${item.w}x${item.h} ${item.unit})</span></td><td class="py-2 text-center">${item.qty}</td><td class="py-2 text-right">${item.totalPerSet.toLocaleString()}</td><td class="py-2 text-right font-bold">${item.grandTotal.toLocaleString()}</td></tr>`;
-                detailContent.innerHTML += `<div class="border-b border-slate-200 pb-2 last:border-0"><span class="font-bold text-sunny-red">ชุดที่ ${idx+1}:</span><br>${item.details}</div>`;
+                // Added item.label to the display
+                tbody.innerHTML += `<tr><td class="py-2"><span class="font-bold">ชุดที่ ${idx+1}</span> <span class="text-xs text-slate-500 ml-2">(${item.w}x${item.h} ${item.unit})</span><div class="text-xs text-slate-400">${item.label || ''}</div></td><td class="py-2 text-center">${item.qty}</td><td class="py-2 text-right">${item.totalPerSet.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="py-2 text-right font-bold">${item.grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`;
+                
+                detailContent.innerHTML += `<div class="border-b border-slate-200 pb-2 last:border-0"><span class="font-bold text-sunny-red">ชุดที่ ${idx+1} (${item.label||''}):</span><br>${item.details}</div>`;
             });
-            document.getElementById('qGrandTotal').innerText = sum.toLocaleString() + ' บาท';
+            document.getElementById('qGrandTotal').innerText = sum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' บาท';
         }
         
         function closeQuotation() { document.getElementById('quotationModal').classList.add('hidden'); }
@@ -1128,10 +1277,14 @@
 
                 // Prepare Data
                 const finalId = (isUpdate && currentEditingId) ? currentEditingId : Date.now();
+                let typeLabel = 'ม่านม้วน';
+                if(calcMode === 'EXT') typeLabel = 'ม่านม้วนภายนอก';
+                else if(calcMode === 'ALU25') typeLabel = 'มู่ลี่อลูมิเนียม 25mm.';
+
                 const qData = { 
                     id: finalId,
                     date: new Date().toISOString(), 
-                    type: calcMode === 'EXT' ? 'ม่านม้วนภายนอก' : 'ม่านม้วน', 
+                    type: typeLabel, 
                     total: document.getElementById('qGrandTotal').innerText, 
                     items: JSON.parse(JSON.stringify(calcItems)) // Deep copy to prevent reference issues
                 };
@@ -1276,7 +1429,11 @@
             if(!q) return;
             
             // Restore Data & Track IDs for editing
-            calcMode = (q.type && q.type.includes('ภายนอก')) ? 'EXT' : 'INT';
+            // Detect Mode from Type String
+            if(q.type.includes('ภายนอก')) calcMode = 'EXT';
+            else if(q.type.includes('25mm')) calcMode = 'ALU25';
+            else calcMode = 'INT';
+
             calcItems = q.items || []; // Safety check for items
             currentEditingId = q.id;
             currentEditingDocId = q.docId || null;
@@ -1316,8 +1473,6 @@
                 slots.forEach(slot => {
                     const currentVal = menu[slot.key] || '';
                     const urls = currentVal.split(',').map(s => s.trim());
-                    // Logic to avoid filtering empty strings if they are placeholders, 
-                    // but we will treat the split array as the source of truth for inputs.
                     if (urls.length === 1 && urls[0] === '') urls.pop(); 
 
                     let inputsHtml = '';
@@ -1373,16 +1528,7 @@
             let current = tempConfig.menus[menuIdx][slotKey] || '';
             let arr = current.split(',').map(s => s.trim());
             if (arr.length === 1 && arr[0] === '') arr = [];
-            
-            arr.push(''); // Add new empty slot
-            tempConfig.menus[menuIdx][slotKey] = arr.join(',');
-            // If empty, join gives "" which might disappear in render logic, 
-            // but we want to show the input. 
-            // In render logic: `if (urls.length === 1 && urls[0] === '') urls.pop();`
-            // If we have one empty item `['']`, it pops it.
-            // So we need to store it as a space ' ' to persist it as "visible empty slot" temporarily? 
-            // Or change render logic. 
-            // Ideally: `arr.push(' ');`
+            arr.push(''); 
             if(arr.length === 1 && arr[0] === '') {
                  tempConfig.menus[menuIdx][slotKey] = ' '; 
             } else {
@@ -1393,14 +1539,10 @@
 
         window.updateMenuImage = (menuIdx, slotKey, imgIdx, newValue) => {
             let current = tempConfig.menus[menuIdx][slotKey] || '';
-            let arr = current.split(','); // Raw split to preserve structure
-            // Normalize existing array if needed (e.g. handle the placeholder space)
+            let arr = current.split(','); 
             arr = arr.map(s => s.trim());
             if (arr.length === 1 && arr[0] === '') arr = [];
-            
-            // Ensure array is big enough
             while(arr.length <= imgIdx) arr.push('');
-            
             arr[imgIdx] = newValue.trim();
             tempConfig.menus[menuIdx][slotKey] = arr.join(',');
         };
@@ -1409,7 +1551,6 @@
             let current = tempConfig.menus[menuIdx][slotKey] || '';
             let arr = current.split(',').map(s => s.trim());
             if (arr.length === 1 && arr[0] === '') arr = [];
-            
             arr.splice(imgIdx, 1);
             tempConfig.menus[menuIdx][slotKey] = arr.join(',');
             renderAdminMenu();
@@ -1532,11 +1673,6 @@
             tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value);
             appConfig = tempConfig;
             applyTheme(appConfig.theme);
-            
-            // Allow anyone with DB access to write config (Rules permitting)
-            // Or assume Admin is logged in via 'isAdminLoggedIn' check or similar context.
-            // Since we use global 'db', it works if Auth is successful (Guest or Member).
-            
             db.collection("app_settings").doc("config").set(appConfig).then(()=>{showToast("บันทึกสำเร็จ");closeConfig();renderSidebar();});
         }
         
@@ -1573,7 +1709,10 @@
             });
             const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
             if (appConfig.calcSettings.enabled || isAdmin) {
-                container.innerHTML += `<div class="px-6 mt-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between"><span>คำนวณราคา</span>${!appConfig.calcSettings.enabled ? '<span class="text-[9px] bg-red-100 text-red-500 px-1 rounded">Admin View</span>' : ''}</div><a href="#" onclick="switchCalcMode('EXT')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">🪟</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">ม่านม้วนภายนอก</span></a><a href="#" onclick="switchCalcMode('INT')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">🏠</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">ม่านม้วน</span></a>`;
+                container.innerHTML += `<div class="px-6 mt-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between"><span>คำนวณราคา</span>${!appConfig.calcSettings.enabled ? '<span class="text-[9px] bg-red-100 text-red-500 px-1 rounded">Admin View</span>' : ''}</div>
+                <a href="#" onclick="switchCalcMode('EXT')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">🪟</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">ม่านม้วนภายนอก</span></a>
+                <a href="#" onclick="switchCalcMode('INT')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">🏠</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">ม่านม้วน</span></a>
+                <a href="#" onclick="switchCalcMode('ALU25')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">📏</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">คำนวนมู่ลี่อลูมิเนียม 25mm.</span></a>`;
             }
             const titleEl = document.getElementById('app-title-display');
             if(titleEl) titleEl.innerText = appConfig.appTitle;
