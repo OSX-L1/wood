@@ -12,16 +12,45 @@
     <meta name="apple-mobile-web-app-title" content="SUNNY Stock">
     <meta name="application-name" content="SUNNY Stock">
 
-    <!-- Link to Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
     <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY</title>
 
-    <!-- Icons: Updated to Straight Thick S with Red Background -->
-    <!-- ใช้ URL-encoded SVG เพื่อให้แสดงผลได้ทันทีโดยไม่ต้องใช้ไฟล์แยก -->
+    <!-- NEW ICON CONFIGURATION -->
+    <!-- 1. Define the SVG Icon URL-encoded -->
     <link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23E63946' rx='80'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='900' font-style='normal' font-size='380'%3ES%3C/text%3E%3C/svg%3E">
     
+    <!-- 2. Apple Touch Icon (For iOS Home Screen) -->
     <link id="apple-touch-icon" rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23E63946' rx='80'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='900' font-style='normal' font-size='380'%3ES%3C/text%3E%3C/svg%3E">
+
+    <!-- 3. Dynamic Manifest (For Android/Chrome Install) -->
+    <!-- สร้าง Manifest แบบ Data URI เพื่อบังคับใช้ Icon ใหม่โดยไม่ต้องพึ่งไฟล์ภายนอก -->
+    <link id="manifest-placeholder" rel="manifest" href="">
+
+    <script>
+        // Generate Dynamic Manifest with the NEW ICON
+        const iconSvgUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23E63946' rx='80'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='900' font-style='normal' font-size='380'%3ES%3C/text%3E%3C/svg%3E";
+        
+        const manifestData = {
+            name: "SUNNY Stock",
+            short_name: "SUNNY",
+            start_url: ".",
+            display: "standalone",
+            background_color: "#FFFFFF",
+            theme_color: "#E63946",
+            icons: [
+                {
+                    src: iconSvgUrl,
+                    sizes: "192x192 512x512",
+                    type: "image/svg+xml",
+                    purpose: "any maskable"
+                }
+            ]
+        };
+        
+        const stringManifest = JSON.stringify(manifestData);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blob);
+        document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
+    </script>
 
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
