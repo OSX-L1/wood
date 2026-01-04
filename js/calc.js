@@ -22,7 +22,7 @@ function openCalculator(mode) {
     const titleIcon = document.getElementById('calcTitleIcon');
     const priceInput = document.getElementById('calcPrice');
     const sysSelect = document.getElementById('calcSystemSelectContainer'); // ของ ALU
-    const woodSelect = document.getElementById('calcWoodSelectContainer'); // ของ WOOD (ใหม่)
+    const woodSelect = document.getElementById('calcWoodSelectContainer'); // ของ WOOD
 
     // Reset visibility
     if(sysSelect) sysSelect.classList.add('hidden');
@@ -46,7 +46,7 @@ function openCalculator(mode) {
         titleText.innerText = 'คำนวณมู่ลี่ไม้';
         titleIcon.innerText = '🪵';
         if(woodSelect) woodSelect.classList.remove('hidden');
-        priceInput.placeholder = "ว่างไว้เพื่อใช้ราคามาตรฐาน"; // ไม่โชว์ราคาแต่บอก Hint
+        priceInput.placeholder = "ว่างไว้เพื่อใช้ราคามาตรฐาน"; 
     } else if (mode === 'ALU25') {
         titleText.innerText = 'คำนวณมู่ลี่อลูมิเนียม 25mm.';
         titleIcon.innerText = '📏';
@@ -74,42 +74,37 @@ function addCalcItem() {
     let displayUnit = 'm';
     let systemLabel = '';
 
-    // แปลงหน่วยพื้นฐานเป็นเมตร (ถ้ากรอกมาเกิน 10 สันนิษฐานว่าเป็น cm)
+    // แปลงหน่วยพื้นฐานเป็นเมตร
     let wM = (wInput >= 10) ? wInput / 100 : wInput;
     let hM = (hInput >= 10) ? hInput / 100 : hInput;
-
-    // Load Config Values (With Fallbacks)
+    
+    // Config values (with fallbacks)
     const woodConf = appConfig.calcSettings.wood || { priceBasswood: 789, priceFoamwood: 750, factor: 1.2, maxW: 2.40, minW: 0.80, minH: 1.00 };
     const pvcConf = appConfig.calcSettings.pvc || { factor: 1.2, minW: 1.00, stepStartH: 2.00 };
     const rollerConf = appConfig.calcSettings.roller || { fabricMult: 1.2, minArea: 1.2, eqExt: 1956, railTop: 200, railBot: 150, sling: 69 };
 
     // --- 1. WOODEN BLINDS Logic ---
     if (calcMode === 'WOOD_CALC') {
-        // A. เช็คความกว้างเกินกำหนด (Warning from Config)
         if (wM > woodConf.maxW) {
             const confirmCalc = confirm(`คำเตือน: มู่ลี่ไม้ทำความกว้างได้สูงสุดที่ ${woodConf.maxW.toFixed(2)} เมตรเท่านั้น\n\nคุณกรอกมา: ${wM.toFixed(2)} เมตร\n\nกด [ตกลง] เพื่อคำนวณราคาตามขนาดเดิม\nกด [ยกเลิก] เพื่อแก้ไขขนาด`);
-            if (!confirmCalc) return; // ยกเลิกการคำนวณ
+            if (!confirmCalc) return; 
         }
 
-        // B. หาชนิดไม้และราคา
         const woodType = document.querySelector('input[name="woodType"]:checked').value;
         const userPrice = parseFloat(document.getElementById('calcPrice').value);
         
-        // ใช้ราคาจาก Config
         let defaultPrice = (woodType === 'BASSWOOD') ? woodConf.priceBasswood : woodConf.priceFoamwood;
-        price = userPrice || defaultPrice; // ถ้ามี User Price ใช้ User Price, ถ้าไม่มีใช้ Default
+        price = userPrice || defaultPrice; 
 
         systemLabel = `มู่ลี่ไม้ (${woodType === 'BASSWOOD' ? 'Basswood' : 'Foamwood'})`;
         displayUnit = 'm';
 
-        // C. ปรับขนาดขั้นต่ำ (จาก Config)
         let adjustW = (wM < woodConf.minW) ? woodConf.minW : wM;
         let adjustH = (hM < woodConf.minH) ? woodConf.minH : hM;
 
         finalW = wM.toFixed(2);
         finalH = hM.toFixed(2);
 
-        // D. สูตร: กว้าง(ปรับ) x สูง(ปรับ) x Factor(Config) x ราคา
         const area = adjustW * adjustH * woodConf.factor;
         totalPerSet = area * price;
 
@@ -128,26 +123,20 @@ function addCalcItem() {
         systemLabel = 'ฉากกั้นห้อง PVC';
         displayUnit = 'm';
         
-        // --- ส่วนแสดงผล (ใช้ค่าจริง) ---
         finalW = wM.toFixed(2);
         finalH = hM.toFixed(2);
 
-        // --- ส่วนคำนวณ ---
-        // ใช้ Min Width จาก Config
         let adjustW = (wM < pvcConf.minW) ? pvcConf.minW : wM;
 
-        // Step Height Logic (เริ่ม Step จาก Config)
-        let startStep = pvcConf.stepStartH; 
-        let adjustH = startStep; 
-
-        if (hM <= startStep + 0.01) adjustH = startStep; // 2.00
-        else if (hM <= startStep + 0.21) adjustH = startStep + 0.20; // 2.20
-        else if (hM <= startStep + 0.41) adjustH = startStep + 0.40; // 2.40
-        else if (hM <= startStep + 0.61) adjustH = startStep + 0.60; // 2.60
-        else if (hM <= startStep + 0.81) adjustH = startStep + 0.80; // 2.80
-        else if (hM <= startStep + 1.01) adjustH = startStep + 1.00; // 3.00
-        else if (hM <= startStep + 1.31) adjustH = startStep + 1.30; // 3.30
-        else adjustH = 3.50; // Hardcap at 3.50 for now or standard max
+        let adjustH = pvcConf.stepStartH; 
+        if (hM <= 2.01) adjustH = 2.00;
+        else if (hM <= 2.21) adjustH = 2.20;
+        else if (hM <= 2.41) adjustH = 2.40;
+        else if (hM <= 2.61) adjustH = 2.60;
+        else if (hM <= 2.81) adjustH = 2.80;
+        else if (hM <= 3.01) adjustH = 3.00;
+        else if (hM <= 3.31) adjustH = 3.30;
+        else adjustH = 3.50; 
 
         const area = adjustW * adjustH * pvcConf.factor;
         totalPerSet = area * price;
@@ -158,7 +147,7 @@ function addCalcItem() {
                    ราคา: ${area.toFixed(2)} x ${price.toLocaleString()} = ${totalPerSet.toLocaleString()} บ.`;
     }
 
-    // --- 3. ALU 25 Logic (Unchanged - Hardcoded Table) ---
+    // --- 3. ALU 25 Logic (Unchanged) ---
     else if (calcMode === 'ALU25') {
         const roundCustom = (val) => Math.round(val / 10) * 10;
         let lookupW = roundCustom(wInput);
@@ -186,7 +175,7 @@ function addCalcItem() {
 
     } 
     
-    // --- 4. Roller / Ext Logic (Standard - Configurable) ---
+    // --- 4. Roller / Ext Logic ---
     else {
         price = parseFloat(document.getElementById('calcPrice').value);
         if(!price) { alert('กรุณาระบุราคา'); return; }
@@ -220,28 +209,40 @@ function addCalcItem() {
     
     document.getElementById('calcW').value = '';
     document.getElementById('calcH').value = '';
-    // เคลียร์ราคาเฉพาะโหมดที่ไม่ใช่มู่ลี่ไม้และ Alu (เพราะมู่ลี่ไม้อาจจะใช้ Default เดิมตลอด)
     if(calcMode !== 'ALU25' && calcMode !== 'WOOD_CALC') document.getElementById('calcPrice').value = ''; 
-    // ถ้าเป็น Wood Calc ให้เคลียร์เฉพาะถ้าผู้ใช้กรอกเอง (หรือจะเคลียร์ทุกครั้งก็ได้)
     if(calcMode === 'WOOD_CALC') document.getElementById('calcPrice').value = '';
 }
 
+// --- UPDATED RENDER TABLE FUNCTION (Fix Mobile Layout) ---
 function renderCalcTable() {
     const tbody = document.getElementById('calcTableBody');
     tbody.innerHTML = '';
     let sum = 0;
+    
+    // ปรับ Container ให้เลื่อนแนวนอนได้ (overflow-x-auto) และลด Padding บนมือถือ (p-2)
+    const tableContainer = tbody.parentElement.parentElement;
+    if(tableContainer) {
+        tableContainer.className = "bg-slate-50 rounded-2xl p-2 md:p-4 overflow-x-auto border border-slate-100 custom-scrollbar";
+    }
+    
+    // เพิ่ม min-w ให้ตาราง เพื่อบังคับให้ไม่บีบข้อมูลจนตกบรรทัด
+    const tableEl = tbody.parentElement;
+    if(tableEl) {
+        tableEl.classList.add('min-w-[600px]');
+    }
+
     calcItems.forEach((item, idx) => {
         sum += item.grandTotal;
         tbody.innerHTML += `
             <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                <td class="px-3 py-3 font-bold">
+                <td class="px-2 py-3 font-bold whitespace-nowrap">
                     ชุดที่ ${idx+1}
-                    <div class="text-xs text-slate-400 font-normal">${item.label || ''}</div>
+                    <div class="text-xs text-slate-400 font-normal truncate max-w-[120px]">${item.label || ''}</div>
                 </td>
-                <td class="px-3 py-3 text-slate-500">${item.w}x${item.h} ${item.unit}</td>
-                <td class="px-3 py-3 text-right">${item.totalPerSet.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td class="px-3 py-3 text-right font-bold">${item.grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td class="px-3 py-3 text-right"><button onclick="removeCalcItem(${idx})" class="text-red-300 hover:text-red-500 btn-bounce">x</button></td>
+                <td class="px-2 py-3 text-slate-500 whitespace-nowrap">${item.w}x${item.h} ${item.unit}</td>
+                <td class="px-2 py-3 text-right whitespace-nowrap">${item.totalPerSet.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td class="px-2 py-3 text-right font-bold whitespace-nowrap">${item.grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td class="px-2 py-3 text-right"><button onclick="removeCalcItem(${idx})" class="text-red-300 hover:text-red-500 btn-bounce">x</button></td>
             </tr>`;
     });
     document.getElementById('totalItems').innerText = calcItems.length;
