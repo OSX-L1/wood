@@ -18,7 +18,7 @@
     <link id="manifest-placeholder" rel="manifest" href="">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -26,7 +26,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <script>
-        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Sarabun', 'Inter', 'sans-serif'] }, colors: { 'sunny-red': 'var(--sunny-red)', 'sunny-dark': 'var(--sunny-dark)', 'sunny-bg': '#F1FAEE' } } } }
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'Sarabun', 'sans-serif'] }, colors: { 'sunny-red': 'var(--sunny-red)', 'sunny-dark': 'var(--sunny-dark)', 'sunny-bg': '#F1FAEE' } } } }
     </script>
 
     <link rel="stylesheet" href="css/style.css">
@@ -189,38 +189,39 @@
                     </div>
 
                     <div id="calcWoodSelectContainer" class="hidden mb-6">
-                        <label class="block text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
-                            <span class="w-6 h-6 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-xs">🪵</span> 
-                            เลือกประเภทไม้
-                        </label>
+                        <label class="block text-sm font-bold text-slate-500 mb-3 ml-1">ชนิดไม้ (Wood Type)</label>
                         <div class="grid grid-cols-2 gap-3">
-                            <label class="relative cursor-pointer group">
+                            <label class="relative group cursor-pointer">
                                 <input type="radio" name="woodType" value="BASSWOOD" checked class="peer sr-only">
-                                <div class="p-4 rounded-2xl border-2 border-slate-100 bg-white hover:border-amber-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 transition-all duration-200 h-full flex flex-col items-center justify-center text-center shadow-sm">
-                                    <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">🌳</div>
-                                    <div class="font-bold text-slate-700 peer-checked:text-amber-800 text-sm">Basswood</div>
-                                    <div class="text-[10px] text-slate-400 mt-1">ไม้จริง ธรรมชาติ</div>
+                                <div class="bg-white border-2 border-slate-100 rounded-2xl p-4 h-24 flex flex-col justify-center transition-all duration-300 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-100/50 peer-checked:translate-y-[-2px]">
+                                    <span class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-1">Standard</span>
+                                    <span class="text-xl font-black text-slate-700 peer-checked:text-amber-700">Basswood</span>
+                                    <span class="text-[10px] text-slate-400 mt-1">ไม้จริงธรรมชาติ สวยงาม</span>
                                 </div>
-                                <div class="absolute top-2 right-2 text-amber-500 opacity-0 peer-checked:opacity-100 transition-opacity scale-0 peer-checked:scale-100 duration-200">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                <div class="absolute top-3 right-3 opacity-0 peer-checked:opacity-100 transition-all duration-300 transform scale-50 peer-checked:scale-100">
+                                    <div class="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-sm">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
                                 </div>
                             </label>
 
-                            <label class="relative cursor-pointer group">
+                            <label class="relative group cursor-pointer">
                                 <input type="radio" name="woodType" value="FOAMWOOD" class="peer sr-only">
-                                <div class="p-4 rounded-2xl border-2 border-slate-100 bg-white hover:border-amber-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 transition-all duration-200 h-full flex flex-col items-center justify-center text-center shadow-sm">
-                                    <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">🛡️</div>
-                                    <div class="font-bold text-slate-700 peer-checked:text-amber-800 text-sm">Foamwood</div>
-                                    <div class="text-[10px] text-slate-400 mt-1">ไม้สังเคราะห์ กันน้ำ</div>
+                                <div class="bg-white border-2 border-slate-100 rounded-2xl p-4 h-24 flex flex-col justify-center transition-all duration-300 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-100/50 peer-checked:translate-y-[-2px]">
+                                    <span class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-1">Waterproof</span>
+                                    <span class="text-xl font-black text-slate-700 peer-checked:text-amber-700">Foamwood</span>
+                                    <span class="text-[10px] text-slate-400 mt-1">ไม้สังเคราะห์ กันน้ำ 100%</span>
                                 </div>
-                                <div class="absolute top-2 right-2 text-amber-500 opacity-0 peer-checked:opacity-100 transition-opacity scale-0 peer-checked:scale-100 duration-200">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                 <div class="absolute top-3 right-3 opacity-0 peer-checked:opacity-100 transition-all duration-300 transform scale-50 peer-checked:scale-100">
+                                    <div class="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-sm">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
                                 </div>
                             </label>
                         </div>
-                        <div class="flex items-start gap-2 mt-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <svg class="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <span class="text-[10px] text-slate-500 leading-tight"><strong>ข้อควรระวัง:</strong> มู่ลี่ไม้ทำความกว้างได้สูงสุดที่ <span class="text-amber-600 font-bold">2.40 เมตร</span> เท่านั้น</span>
+                        <div class="flex items-center gap-2 mt-3 px-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                             <span class="text-[10px] text-slate-400">ขนาดความกว้างสูงสุด <span class="font-bold text-slate-600">2.40 เมตร</span></span>
                         </div>
                     </div>
 
