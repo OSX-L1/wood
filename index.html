@@ -29,27 +29,58 @@
     </script>
 
     <link rel="stylesheet" href="css/style.css">
+    
     <style>
-        /* OVERRIDE STYLE FOR MOBILE HEADER HEIGHT */
-        /* ปรับความสูงขั้นต่ำในมือถือให้เล็กลง (เดิม 280px -> แก้เป็น 180px) */
-        .header-custom-bg { position: relative; min-height: 180px; }
+        /* Base Header Height */
+        .header-custom-bg { position: relative; min-height: 280px; }
         
-        /* ใน iPad/PC ให้สูงเท่าเดิม หรือปรับตามเหมาะสม */
-        @media (min-width: 768px) { .header-custom-bg { min-height: 380px; } }
+        /* Desktop Adjustment */
+        @media (min-width: 768px) { 
+            .header-custom-bg { min-height: 380px; } 
+        }
 
-        /* ปรับขนาดกล่องข้อความบนภาพให้เล็กลงในมือถือ */
+        /* MOBILE SPECIFIC ADJUSTMENTS (แก้ไขส่วนนี้) */
         @media (max-width: 768px) { 
+            /* 1. ปรับความสูงและตำแหน่ง Flexbox ของกรอบใหญ่ */
+            .header-custom-bg { 
+                min-height: 220px; /* ลดความสูงลงแต่พอให้เห็นภาพ */
+                display: flex !important;
+                flex-direction: column;
+                justify-content: flex-end; /* ดันเนื้อหาลงด้านล่าง */
+                align-items: flex-start;   /* ชิดซ้าย */
+                padding: 1rem !important;  /* ขอบ 1rem */
+            } 
+
+            /* 2. ปรับกล่องแก้ว (Glass Box) ให้เล็กและบางลง */
             .header-content-glass { 
                 width: auto; 
-                max-width: 95%; 
-                margin: 0 auto; 
+                max-width: 90%; 
+                margin: 0; /* ไม่ต้อง auto margin */
                 display: inline-block; 
-                padding: 0.5rem 0.75rem; /* ลด Padding */
-                background: rgba(255, 255, 255, 0.6); 
-                backdrop-filter: blur(5px); 
+                padding: 0.5rem 0.75rem; /* ลด Padding ภายใน */
+                background: rgba(255, 255, 255, 0.45) !important; /* ปรับให้ใสขึ้น (เดิม 0.6) */
+                backdrop-filter: blur(4px); 
+                border: 1px solid rgba(255,255,255,0.3);
+                border-radius: 1rem;
+                margin-bottom: 0.5rem; /* เว้นระยะจากขอบล่างนิดหน่อย */
             } 
-            .header-content-glass h1 { font-size: 1.25rem !important; } /* ลดขนาดฟอนต์ */
-            .header-content-glass h2 { font-size: 0.6rem !important; margin-bottom: 0.1rem !important; } 
+
+            /* 3. ย่อขนาดตัวอักษรในมือถือ */
+            .header-content-glass h1 { 
+                font-size: 1.25rem !important; 
+                line-height: 1.2 !important;
+                margin-top: 0.1rem;
+            } 
+            .header-content-glass h2 { 
+                font-size: 0.6rem !important; 
+                margin-bottom: 0.1rem !important;
+                opacity: 0.8;
+            } 
+            
+            /* ซ่อนปุ่มติดตั้งแอพใน Header ของมือถือ เพื่อประหยัดพื้นที่ (เพราะมีใน Sidebar แล้ว) */
+            #headerInstallBtn {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -81,10 +112,17 @@
         <div class="p-4 pt-16 md:p-8 pb-40 max-w-6xl mx-auto space-y-6">
             <div id="headerSection" class="bg-white rounded-[2rem] p-4 md:p-8 shadow-sm border border-slate-100 wooden-pattern relative overflow-hidden hover:shadow-lg transition-all duration-500 ease-in-out">
                 <div class="absolute top-0 right-0 w-48 h-48 bg-red-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-60 pointer-events-none"></div>
+                
                 <div id="headerContentWrapper" class="relative z-10 transition-all duration-300">
                     <h2 id="systemTitle" class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ระบบเช็คสต็อก</h2>
+                    
                     <h1 class="text-xl md:text-4xl font-black text-slate-800 tracking-tight leading-tight">ตรวจสอบ<span class="text-sunny-red italic block md:inline" id="productTypeLabel">สินค้า</span></h1>
-                    <div class="mt-2 flex flex-wrap items-center gap-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[10px] font-bold border border-green-100 shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>Online</span><span class="text-slate-400 text-[10px]">Updated: <span id="lastUpdateDisplay" class="font-semibold text-slate-600">...</span></span><button id="headerInstallBtn" onclick="installApp()" class="hidden md:hidden inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-800 text-white text-[10px] font-bold border border-slate-700 shadow-sm animate-pulse hover:bg-black">ติดตั้งแอพ</button></div>
+                    
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[10px] font-bold border border-green-100 shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>Online</span>
+                        <span class="text-slate-400 text-[10px]">Updated: <span id="lastUpdateDisplay" class="font-semibold text-slate-600">...</span></span>
+                        <button id="headerInstallBtn" onclick="installApp()" class="hidden md:hidden inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-800 text-white text-[10px] font-bold border border-slate-700 shadow-sm animate-pulse hover:bg-black">ติดตั้งแอพ</button>
+                    </div>
                 </div>
             </div>
 
@@ -153,8 +191,7 @@
                                     <th class="px-3 py-2"></th>
                                 </tr>
                             </thead>
-                            <tbody id="calcTableBody" class="text-slate-600 block md:table-row-group">
-                                </tbody>
+                            <tbody id="calcTableBody" class="text-slate-600 block md:table-row-group"></tbody>
                             <tfoot class="font-bold text-slate-800 bg-white border-t border-slate-200 block md:table-footer-group rounded-xl mt-2 md:mt-0 shadow-sm md:shadow-none p-3 md:p-0">
                                 <tr class="flex justify-between items-center md:table-row">
                                     <td colspan="3" class="px-3 py-3 text-left md:text-right">รวมทั้งหมด (<span id="totalItems">0</span> ชุด)</td>
