@@ -704,3 +704,61 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }, 500); 
 });
+
+// --- UPDATED RENDER TABLE (Responsive Card Layout) ---
+function renderCalcTable() {
+    const tbody = document.getElementById('calcTableBody');
+    tbody.innerHTML = '';
+    let sum = 0;
+    
+    // รีเซ็ต class ของ container เผื่อมีตกค้าง
+    const tableContainer = tbody.parentElement.parentElement;
+    if(tableContainer) {
+        // ลบ overflow-x-auto ออก เพราะเราใช้ระบบการ์ดแล้ว
+        tableContainer.className = "bg-slate-50 rounded-2xl p-2 md:p-4 border border-slate-100";
+    }
+
+    calcItems.forEach((item, idx) => {
+        sum += item.grandTotal;
+        
+        // สร้าง HTML แบบ Responsive:
+        // Mobile: flex flex-col (แนวตั้ง), Desktop: table-row (แนวนอน)
+        tbody.innerHTML += `
+            <tr class="flex flex-col md:table-row bg-white md:bg-transparent p-4 md:p-0 rounded-2xl md:rounded-none border md:border-b border-slate-200 md:border-slate-100 mb-3 md:mb-0 shadow-sm md:shadow-none relative group">
+                
+                <td class="md:px-2 md:py-3 font-bold md:whitespace-nowrap mb-2 md:mb-0">
+                    <div class="flex justify-between items-start md:block">
+                        <div class="text-sm md:text-sm">
+                            <span class="md:hidden text-xs text-slate-400 font-normal uppercase tracking-wider mr-2">รายการ:</span>
+                            ชุดที่ ${idx+1}
+                        </div>
+                        <button onclick="removeCalcItem(${idx})" class="md:hidden text-slate-300 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                    </div>
+                    <div class="text-xs text-slate-400 font-normal truncate max-w-full md:max-w-[150px] mt-1 md:mt-0">${item.label || ''}</div>
+                </td>
+
+                <td class="md:px-2 md:py-3 text-slate-500 md:whitespace-nowrap flex justify-between md:table-cell border-b border-dashed border-slate-100 md:border-none pb-2 md:pb-0 mb-2 md:mb-0">
+                    <span class="md:hidden text-xs font-bold text-slate-400">ขนาด:</span>
+                    <span class="font-mono font-medium">${item.w} x ${item.h} ${item.unit}</span>
+                </td>
+
+                <td class="md:px-2 md:py-3 text-right md:whitespace-nowrap flex justify-between md:table-cell border-b border-dashed border-slate-100 md:border-none pb-2 md:pb-0 mb-2 md:mb-0">
+                    <span class="md:hidden text-xs font-bold text-slate-400">ราคา/ชุด:</span>
+                    <span>${item.totalPerSet.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                </td>
+
+                <td class="md:px-2 md:py-3 text-right font-bold md:whitespace-nowrap flex justify-between md:table-cell items-center">
+                    <span class="md:hidden text-xs font-bold text-slate-400">รวมเงิน:</span>
+                    <span class="text-lg md:text-base text-sunny-red md:text-slate-800">${item.grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                </td>
+
+                <td class="hidden md:table-cell px-2 py-3 text-right">
+                    <button onclick="removeCalcItem(${idx})" class="text-red-300 hover:text-red-500 btn-bounce bg-red-50 p-1 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </td>
+            </tr>`;
+    });
+    document.getElementById('totalItems').innerText = calcItems.length;
+    document.getElementById('grandTotal').innerText = sum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
