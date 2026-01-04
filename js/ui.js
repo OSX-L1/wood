@@ -1,0 +1,603 @@
+// --- RICH TEXT & EMOJI UTILS ---
+const EMOJI_LIST = [
+    '📢', '🔥', '✨', '🎉', '⚠️', '🚨', '✅', '❌', '🟢', '🔴', 
+    '📅', '🕒', '📌', '📍', '💡', '🚚', '📦', '🎁', '🏷️', '🛒',
+    '💬', '📞', '📧', '🏠', '🏢', '🛠️', '🔧', '⚙️', '📈', '💰',
+    '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'
+];
+
+function execCmd(command, value = null) {
+    document.execCommand(command, false, value);
+}
+
+function insertEmoji(idx, char, type = 'text') {
+    const editorId = type === 'badge' ? `badge-edit-${idx}` : `news-edit-${idx}`;
+    const pickerId = type === 'badge' ? `emoji-picker-badge-${idx}` : `emoji-picker-${idx}`;
+    
+    const el = document.getElementById(editorId);
+    if(!el) return;
+    
+    el.focus();
+    document.execCommand('insertText', false, char);
+    const event = new Event('input', { bubbles: true });
+    el.dispatchEvent(event);
+    document.getElementById(pickerId).classList.add('hidden');
+}
+
+// --- GOOGLE LOGIN FUNCTIONS ---
+function loginWithGoogle() {
+    if (!auth) return;
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).then((result) => {
+        showToast(`ยินดีต้อนรับ ${result.user.displayName}`);
+    }).catch((error) => {
+        console.error(error);
+        alert("Login Error: " + error.message);
+    });
+}
+
+function logoutUser() {
+    if (!auth) return;
+    if (confirm("ต้องการออกจากระบบหรือไม่?")) {
+        auth.signOut().then(() => {
+            showToast("ออกจากระบบแล้ว");
+        });
+    }
+}
+
+// --- UI RENDERING ---
+function renderUserSidebar(user) {
+    const container = document.getElementById('user-profile-section');
+    if (!container) return; 
+
+    if (user && !user.isAnonymous) {
+        // Member Mode
+        container.innerHTML = `
+            <div class="flex items-center gap-3 p-3 bg-red-50 rounded-xl border border-red-100 mb-2">
+                <img src="${user.photoURL || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full border-2 border-white shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <div class="text-xs font-bold text-slate-400">สวัสดี,</div>
+                    <div class="text-sm font-bold text-slate-700 truncate">${user.displayName}</div>
+                </div>
+                <button onclick="logoutUser()" class="text-slate-400 hover:text-red-500 p-1" title="ออกจากระบบ">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                </button>
+            </div>
+            <button onclick="openHistoryModal()" class="w-full mb-4 flex items-center justify-center gap-2 bg-white text-slate-600 border border-slate-200 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-50 hover:text-sunny-red hover:border-red-100 transition-all shadow-sm btn-bounce">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                ดูประวัติที่บันทึกไว้
+            </button>
+        `;
+    } else {
+        // Guest Mode
+        container.innerHTML = `
+            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-2 bg-white text-slate-600 border border-slate-200 py-3 rounded-xl text-sm font-bold hover:bg-slate-50 hover:text-sunny-red hover:border-red-100 transition-all shadow-sm mb-4 btn-bounce">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                เข้าสู่ระบบ Gmail
+            </button>
+            <button onclick="openHistoryModal()" class="w-full mb-4 flex items-center justify-center gap-2 bg-slate-50 text-slate-500 border border-transparent py-2 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all shadow-sm btn-bounce">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                ประวัติ (Guest)
+            </button>
+        `;
+    }
+}
+
+function renderSidebar() {
+    const container = document.getElementById('sidebar-menu-container');
+    if (!container) return;
+    container.innerHTML = `<div class="px-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">เช็คสต็อก</div>`;
+    appConfig.menus.forEach(menu => {
+        if (!menu.active) return;
+        const activeClass = currentSystem === menu.id ? 'active' : '';
+        const iconSvg = ICONS[menu.icon] || ICONS['wood'];
+        container.innerHTML += `
+            <a href="#" onclick="switchSystem('${menu.id}')" class="menu-item ${activeClass} group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red">
+                <div class="w-8 flex justify-center mr-2 transition-transform group-hover:scale-110 duration-300">${iconSvg}</div>
+                <div class="flex flex-col"><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">${menu.name}</span>${menu.sub?`<span class="text-[10px] text-slate-400 group-hover:text-red-300 transition-colors">${menu.sub}</span>`:''}</div>
+            </a>`;
+    });
+    const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
+    if (appConfig.calcSettings.enabled || isAdmin) {
+        container.innerHTML += `<div class="px-6 mt-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between"><span>คำนวณราคา</span>${!appConfig.calcSettings.enabled ? '<span class="text-[9px] bg-red-100 text-red-500 px-1 rounded">Admin View</span>' : ''}</div>
+        <a href="#" onclick="switchCalcMode('EXT')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">🪟</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">ม่านม้วนภายนอก</span></a>
+        <a href="#" onclick="switchCalcMode('PVC_CALC')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">🚪</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">คำนวณฉาก PVC</span></a>
+        <a href="#" onclick="switchCalcMode('INT')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">🏠</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">ม่านม้วน</span></a>
+        <a href="#" onclick="switchCalcMode('ALU25')" class="group flex items-center px-6 py-3 text-slate-600 hover:bg-red-50 hover:text-sunny-red transition-all duration-300 ease-out border-l-4 border-transparent hover:border-sunny-red"><div class="w-8 flex justify-center mr-2 text-xl transition-transform group-hover:scale-110 duration-300">📏</div><span class="font-medium transition-transform group-hover:translate-x-1 duration-300">คำนวนมู่ลี่อลูมิเนียม 25mm.</span></a>`;
+    }
+    const titleEl = document.getElementById('app-title-display');
+    if(titleEl) titleEl.innerText = appConfig.appTitle;
+    
+    renderUserSidebar(currentUser);
+    checkPwaStatus();
+}
+
+function renderNews() {
+    const container = document.getElementById('news-container');
+    const pinnedWrapper = document.getElementById('pinned-news-wrapper');
+    const scrollWrapper = document.getElementById('scrolling-news-wrapper');
+    const scrollTrack = document.getElementById('news-ticker-track');
+    
+    const news = appConfig.newsItems || [];
+    if(news.length === 0) {
+        if(container) container.classList.add('hidden');
+        return;
+    }
+    container.classList.remove('hidden');
+    
+    const pinnedItems = news.filter(n => n.pinned);
+    const scrollItems = news.filter(n => !n.pinned);
+    
+    pinnedWrapper.innerHTML = '';
+    const isDateNew = (d) => { if(!d) return false; return (new Date() - new Date(d)) / (1000 * 60 * 60 * 24) < 7; };
+    const formatDate = (d) => { if(!d) return ''; return new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); };
+
+    pinnedItems.forEach(item => {
+        const isNew = isDateNew(item.date);
+        const el = document.createElement('div');
+        el.className = "bg-gradient-to-r from-red-50 to-white border border-red-100 p-3 rounded-xl shadow-sm flex items-start gap-3 relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5";
+        el.innerHTML = `
+            <div class="absolute top-0 left-0 w-1 h-full bg-sunny-red"></div>
+            <div class="text-sunny-red mt-0.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" /></svg></div>
+            <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                    ${isNew ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm" style="background-color: ${item.badgeColor}; color: ${item.badgeTextColor}">${item.badgeLabel}</span>` : ''}
+                    <span class="text-[10px] text-slate-400 font-medium bg-white px-1.5 rounded border border-slate-100">${formatDate(item.date)}</span>
+                </div>
+                <p class="text-sm font-semibold whitespace-normal break-words leading-relaxed" style="color: ${item.textColor}">${item.text}</p>
+            </div>`;
+        pinnedWrapper.appendChild(el);
+    });
+    
+    if (scrollItems.length > 0) {
+        scrollWrapper.classList.remove('hidden');
+        scrollTrack.innerHTML = '';
+        const createItem = (item) => `
+            <div class="h-28 flex items-center gap-3 px-2 w-full shrink-0 hover:bg-slate-50/50 transition-colors">
+                <div class="flex-1 min-w-0 flex flex-col justify-center h-full">
+                    <div class="flex items-center gap-2 mb-0.5">
+                        ${isDateNew(item.date) ? `<span class="px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold" style="background-color: ${item.badgeColor}; color: ${item.badgeTextColor}">${item.badgeLabel}</span>` : ''}
+                        <span class="text-[10px] text-slate-400">${formatDate(item.date)}</span>
+                    </div>
+                    <div class="text-sm font-medium whitespace-normal break-words leading-snug line-clamp-4" style="color: ${item.textColor}">${item.text}</div>
+                </div>
+            </div>`;
+        
+        let html = '';
+        scrollItems.forEach(item => html += createItem(item));
+        if (scrollItems.length > 0) scrollItems.forEach(item => html += createItem(item));
+        
+        scrollTrack.innerHTML = html;
+        const speedVal = appConfig.newsSettings.speed || 3;
+        const totalDuration = (6 - speedVal) * scrollItems.length;
+        scrollTrack.style.animation = `verticalSlide ${totalDuration}s linear infinite`;
+    } else {
+        scrollWrapper.classList.add('hidden');
+    }
+}
+
+function requestNotificationPermission() {
+    if (!("Notification" in window)) return alert("อุปกรณ์ไม่รองรับ");
+    Notification.requestPermission().then(p => {
+        if (p === "granted") showToast("เปิดแจ้งเตือนแล้ว");
+        else alert("กรุณากดอนุญาตเพื่อรับแจ้งเตือน");
+        renderSidebar();
+    });
+}
+
+function checkAndNotifyNews(newsItems) {
+    if (!newsItems || newsItems.length === 0) return;
+    const latest = [...newsItems].sort((a,b) => b.id - a.id)[0];
+    const lastId = parseInt(localStorage.getItem('last_notified_news_id') || '0');
+    if (latest.id > lastId) {
+        if (Notification.permission === "granted") new Notification("ประกาศใหม่", { body: latest.text, icon: "https://via.placeholder.com/128" });
+        else showToast("ประกาศใหม่: " + latest.text);
+        localStorage.setItem('last_notified_news_id', latest.id);
+    }
+}
+
+function applyTheme(theme) {
+    document.body.classList.remove('theme-christmas');
+    let primary = '#E63946', dark = '#1D3557', showScene = 'none';
+    if (theme === 'christmas') {
+        document.body.classList.add('theme-christmas');
+        primary = '#D62828'; dark = '#14532D'; showScene = 'block';
+    }
+    const scene = document.getElementById('xmas-scene');
+    if(scene) scene.style.display = showScene;
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", primary);
+    document.documentElement.style.setProperty('--sunny-red', primary);
+    document.documentElement.style.setProperty('--sunny-dark', dark);
+}
+
+// --- ADMIN FUNCTIONS ---
+function checkAdminLogin() { if (localStorage.getItem('isAdminLoggedIn') === 'true') openConfig(); else openAdminLogin(); }
+function openAdminLogin() { document.getElementById('adminLoginModal').classList.remove('hidden'); document.getElementById('adminPassword').value=''; document.getElementById('loginError').classList.add('hidden'); document.getElementById('adminPassword').focus(); }
+function closeAdminLogin() { document.getElementById('adminLoginModal').classList.add('hidden'); }
+function handleLogin() { if(document.getElementById('adminPassword').value === 'sn1988') { localStorage.setItem('isAdminLoggedIn', 'true'); closeAdminLogin(); showToast("เข้าสู่ระบบสำเร็จ"); openConfig(); renderSidebar(); } else { document.getElementById('loginError').classList.remove('hidden'); } }
+function logoutAdmin() { localStorage.removeItem('isAdminLoggedIn'); closeConfig(); showToast("ออกจากระบบแล้ว"); renderSidebar(); }
+
+function openConfig() {
+    tempConfig = JSON.parse(JSON.stringify(appConfig));
+    document.getElementById('adminConfigModal').classList.remove('hidden');
+    document.getElementById('conf-app-title').value = tempConfig.appTitle;
+    document.getElementById('conf-news-speed').value = tempConfig.newsSettings.speed || 3;
+    document.getElementById('logoutBtn').classList.remove('hidden');
+    document.getElementById('conf-calc-enabled').checked = tempConfig.calcSettings.enabled;
+    document.getElementById('factor-fabricMult').value = tempConfig.calcSettings.factors.fabricMult;
+    document.getElementById('factor-minArea').value = tempConfig.calcSettings.factors.minArea;
+    document.getElementById('factor-eqExt').value = tempConfig.calcSettings.factors.eqExt;
+    document.getElementById('factor-railTop').value = tempConfig.calcSettings.factors.railTop;
+    document.getElementById('factor-railBot').value = tempConfig.calcSettings.factors.railBot;
+    document.getElementById('factor-sling').value = tempConfig.calcSettings.factors.sling;
+    const theme = tempConfig.theme || 'default';
+    const radios = document.getElementsByName('app-theme');
+    for(const r of radios) { r.checked = (r.value === theme); }
+    
+    const st = document.getElementById('admin-mode-status');
+    const isConnected = auth && auth.currentUser;
+    st.innerText = isConnected ? "สถานะ: Online Mode" : "สถานะ: Offline Mode";
+    st.className = isConnected ? "text-xs font-bold text-green-600" : "text-xs font-bold text-red-600";
+    switchAdminTab('menu');
+}
+
+function closeConfig() { applyTheme(appConfig.theme); document.getElementById('adminConfigModal').classList.add('hidden'); }
+function saveConfig() {
+    tempConfig.appTitle = document.getElementById('conf-app-title').value;
+    tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value);
+    appConfig = tempConfig;
+    applyTheme(appConfig.theme);
+    db.collection("app_settings").doc("config").set(appConfig).then(()=>{showToast("บันทึกสำเร็จ");closeConfig();renderSidebar();});
+}
+
+function switchAdminTab(tab) {
+    ['menu','news','calc','saved', 'theme', 'features'].forEach(t => {
+        const btn = document.getElementById('tab-btn-'+t);
+        const content = document.getElementById('tab-content-'+t);
+        if(btn) btn.className = "px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1";
+        if(content) content.classList.add('hidden');
+    });
+    const activeBtn = document.getElementById('tab-btn-'+tab);
+    const activeContent = document.getElementById('tab-content-'+tab);
+    if(activeBtn) activeBtn.className = "px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap flex items-center gap-1";
+    if(activeContent) activeContent.classList.remove('hidden');
+    if(tab === 'menu') renderAdminMenu();
+    if(tab === 'news') renderAdminNews();
+    if(tab === 'saved') renderQuotationsList('saved-quotations-list', 'all'); 
+    if(tab === 'features') renderAdminFeatures();
+}
+
+function renderAdminMenu() {
+    const list = document.getElementById('admin-menu-list');
+    list.innerHTML = '';
+    
+    tempConfig.menus.forEach((menu, idx) => {
+        const slots = [
+            { key: 'bgImage1', label: 'ช่องซ้าย (Left)' },
+            { key: 'bgImage2', label: 'ช่องกลาง (Center)' },
+            { key: 'bgImage3', label: 'ช่องขวา (Right)' }
+        ];
+
+        let slotsHtml = '';
+        slots.forEach(slot => {
+            const currentVal = menu[slot.key] || '';
+            const urls = currentVal.split(',').map(s => s.trim());
+            if (urls.length === 1 && urls[0] === '') urls.pop(); 
+
+            let inputsHtml = '';
+            urls.forEach((url, uIdx) => {
+                inputsHtml += `
+                    <div class="flex items-center gap-1 mb-1">
+                        <span class="text-[9px] text-slate-300 w-3 text-right">${uIdx+1}.</span>
+                        <input type="text" value="${url}" 
+                            onchange="updateMenuImage(${idx}, '${slot.key}', ${uIdx}, this.value)"
+                            class="flex-1 min-w-0 p-1.5 border border-slate-200 rounded text-[10px] text-slate-600 bg-white focus:ring-1 focus:ring-sunny-red focus:outline-none placeholder:text-slate-200" 
+                            placeholder="https://...">
+                        <button onclick="removeMenuImage(${idx}, '${slot.key}', ${uIdx})" class="text-slate-300 hover:text-red-500 p-1 flex items-center justify-center h-6 w-6 bg-slate-50 hover:bg-red-50 rounded transition-colors" title="ลบภาพ"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                    </div>
+                `;
+            });
+
+            slotsHtml += `
+                <div class="bg-slate-50 p-2 rounded border border-slate-100 flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[9px] text-slate-500 font-bold">${slot.label}</span>
+                        <button onclick="addMenuImage(${idx}, '${slot.key}')" class="text-[9px] bg-white border border-slate-200 hover:border-sunny-red hover:text-sunny-red px-2 py-0.5 rounded transition-colors shadow-sm flex items-center gap-1"><span>+</span> เพิ่มภาพ</button>
+                    </div>
+                    <div class="space-y-1 flex-1 overflow-y-auto max-h-32 custom-scrollbar">
+                        ${inputsHtml.length > 0 ? inputsHtml : '<div class="text-[9px] text-slate-300 italic text-center py-4 border-2 border-dashed border-slate-100 rounded">ไม่มีรูปภาพ</div>'}
+                    </div>
+                </div>
+            `;
+        });
+
+        list.innerHTML += `
+            <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-slate-100 rounded text-slate-500">${ICONS[menu.icon]||'?'}</div>
+                    <div class="flex-grow space-y-1">
+                        <input type="text" value="${menu.name}" onchange="tempConfig.menus[${idx}].name=this.value" class="w-full p-1 border rounded text-sm font-bold">
+                        <input type="text" value="${menu.sub}" onchange="tempConfig.menus[${idx}].sub=this.value" class="w-full p-1 border rounded text-xs text-slate-500">
+                    </div>
+                    <input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 block">จัดการภาพพื้นหลัง (แยก 3 ช่องอิสระ)</label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        ${slotsHtml}
+                    </div>
+                    <div class="text-[9px] text-slate-400 mt-1">* กดปุ่มเพิ่มภาพเพื่อใส่ URL รูปภาพใหม่ โดยระบบจะสไลด์รูปวนไปตามลำดับ</div>
+                </div>
+            </div>`;
+    });
+}
+
+// Helpers attached to window for inline onclicks in Admin Menu
+window.addMenuImage = (menuIdx, slotKey) => {
+    let current = tempConfig.menus[menuIdx][slotKey] || '';
+    let arr = current.split(',').map(s => s.trim());
+    if (arr.length === 1 && arr[0] === '') arr = [];
+    arr.push(''); 
+    if(arr.length === 1 && arr[0] === '') tempConfig.menus[menuIdx][slotKey] = ' '; 
+    else tempConfig.menus[menuIdx][slotKey] = arr.join(',');
+    renderAdminMenu();
+};
+
+window.updateMenuImage = (menuIdx, slotKey, imgIdx, newValue) => {
+    let current = tempConfig.menus[menuIdx][slotKey] || '';
+    let arr = current.split(','); 
+    arr = arr.map(s => s.trim());
+    if (arr.length === 1 && arr[0] === '') arr = [];
+    while(arr.length <= imgIdx) arr.push('');
+    arr[imgIdx] = newValue.trim();
+    tempConfig.menus[menuIdx][slotKey] = arr.join(',');
+};
+
+window.removeMenuImage = (menuIdx, slotKey, imgIdx) => {
+    let current = tempConfig.menus[menuIdx][slotKey] || '';
+    let arr = current.split(',').map(s => s.trim());
+    if (arr.length === 1 && arr[0] === '') arr = [];
+    arr.splice(imgIdx, 1);
+    tempConfig.menus[menuIdx][slotKey] = arr.join(',');
+    renderAdminMenu();
+};
+
+function renderAdminNews() {
+    const list = document.getElementById('admin-news-list'); 
+    list.innerHTML = '';
+    const sorted = [...tempConfig.newsItems].sort((a,b) => (b.pinned===a.pinned)? 0 : b.pinned? 1 : -1);
+    
+    sorted.forEach((item, idx) => {
+        const realIdx = tempConfig.newsItems.findIndex(x => x.id === item.id);
+        
+        let emojiGridText = EMOJI_LIST.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'text')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
+        let emojiGridBadge = EMOJI_LIST.map(e => `<button onclick="insertEmoji(${realIdx}, '${e}', 'badge')" class="text-xl hover:bg-slate-100 p-2 rounded transition-colors">${e}</button>`).join('');
+
+        const createToolbar = (type) => `
+            <div class="flex gap-1 mb-1.5 flex-wrap items-center">
+                <button onmousedown="event.preventDefault()" onclick="execCmd('bold')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">B</button>
+                <button onmousedown="event.preventDefault()" onclick="execCmd('italic')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] italic hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">I</button>
+                <button onmousedown="event.preventDefault()" onclick="execCmd('underline')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] underline hover:bg-slate-50 hover:text-sunny-red min-w-[24px]">U</button>
+                <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                <button onmousedown="event.preventDefault()" onclick="document.getElementById('emoji-picker-${type === 'badge' ? 'badge-' : ''}${realIdx}').classList.toggle('hidden')" class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50 hover:text-sunny-red">😀</button>
+            </div>
+        `;
+
+        list.innerHTML += `
+            <div class="p-4 rounded-xl border ${item.pinned ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} relative group shadow-sm mb-4">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 space-y-2">
+                            <div class="flex justify-between items-end"><label class="text-[10px] text-slate-400 font-bold uppercase">ข้อความประกาศ</label></div>
+                            ${createToolbar('text')}
+                            <div class="relative">
+                                <div id="news-edit-${realIdx}" contenteditable="true" class="w-full p-2 text-sm border rounded bg-white focus:outline-none focus:ring-1 focus:ring-sunny-red min-h-[60px] max-h-32 overflow-y-auto font-sans" oninput="tempConfig.newsItems[${realIdx}].text = this.innerHTML">${item.text}</div>
+                                <div id="emoji-picker-${realIdx}" class="hidden absolute top-8 left-0 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64 mt-1">
+                                    <div class="flex justify-between items-center px-2 pb-2 border-b border-slate-100 mb-2"><span class="text-xs font-bold text-slate-400">เลือก Emoji</span><button onclick="document.getElementById('emoji-picker-${realIdx}').classList.add('hidden')" class="text-slate-300 hover:text-red-500 text-xs">✕</button></div>
+                                    <div class="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto custom-scrollbar">${emojiGridText}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 pt-8">
+                            <button onclick="togglePinNews(${realIdx})" class="${item.pinned?'text-white bg-sunny-red':'text-slate-400 bg-white border'} p-2 rounded-lg shadow-sm transition-all hover:scale-105" title="${item.pinned?'ยกเลิกปักหมุด':'ปักหมุด'}"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/></svg></button>
+                            <button onclick="deleteNews(${realIdx})" class="text-slate-400 hover:text-red-500 bg-white border p-2 rounded-lg shadow-sm transition-all hover:scale-105" title="ลบ"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 border-t border-slate-200 pt-3 mt-1">
+                        <div class="relative">
+                            <label class="block text-[10px] text-slate-500 font-bold mb-1">ข้อความป้าย (Badge)</label>
+                            <div class="flex items-center gap-1 mb-1">
+                                <button onmousedown="event.preventDefault()" onclick="document.getElementById('emoji-picker-badge-${realIdx}').classList.toggle('hidden')" class="p-1 bg-white border border-slate-200 rounded text-[10px] hover:bg-slate-50">😀</button>
+                            </div>
+                            <div id="badge-edit-${realIdx}" contenteditable="true" class="w-full p-1.5 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-sunny-red font-bold text-slate-600 bg-white min-h-[30px] whitespace-nowrap overflow-hidden" oninput="tempConfig.newsItems[${realIdx}].badgeLabel = this.innerHTML">${item.badgeLabel}</div>
+                            <div id="emoji-picker-badge-${realIdx}" class="hidden absolute bottom-full left-0 mb-1 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2 w-64">
+                                <div class="flex justify-between items-center px-2 pb-2 border-b border-slate-100 mb-2"><span class="text-xs font-bold text-slate-400">Emoji (ป้าย)</span><button onclick="document.getElementById('emoji-picker-badge-${realIdx}').classList.add('hidden')" class="text-slate-300 hover:text-red-500 text-xs">✕</button></div>
+                                <div class="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto custom-scrollbar">${emojiGridBadge}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-bold mb-1">สีพื้นหลังป้าย</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" value="${item.badgeColor}" onchange="tempConfig.newsItems[${realIdx}].badgeColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                <span class="text-[10px] text-slate-400 font-mono">${item.badgeColor}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-bold mb-1">สีตัวอักษรป้าย</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" value="${item.badgeTextColor}" onchange="tempConfig.newsItems[${realIdx}].badgeTextColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                <span class="text-[10px] text-slate-400 font-mono">${item.badgeTextColor}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-bold mb-1">สีข้อความหลัก</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" value="${item.textColor}" onchange="tempConfig.newsItems[${realIdx}].textColor=this.value" class="h-8 w-10 border rounded cursor-pointer p-0 overflow-hidden">
+                                <span class="text-[10px] text-slate-400 font-mono">${item.textColor}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-2 border-t border-slate-100 border-dashed">
+                        <div class="flex items-center gap-2">
+                            <label class="text-[10px] text-slate-400">วันที่:</label>
+                            <input type="date" value="${item.date.split('T')[0]}" onchange="tempConfig.newsItems[${realIdx}].date=this.value" class="text-xs border rounded p-1 text-slate-500 bg-slate-50">
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    });
+}
+
+function togglePinNews(idx) {
+    tempConfig.newsItems[idx].pinned = !tempConfig.newsItems[idx].pinned;
+    renderAdminNews();
+}
+
+function addNewNewsItem() { 
+    tempConfig.newsItems.unshift({ 
+        id: Date.now(), 
+        text: "ประกาศใหม่...", 
+        date: new Date().toISOString(), 
+        pinned: false, 
+        badgeLabel: "NEW!", 
+        badgeColor: "#E63946", 
+        badgeTextColor: "#FFFFFF", 
+        textColor: "#334155" 
+    }); 
+    renderAdminNews(); 
+}
+
+function deleteNews(idx) { 
+    if(confirm('ลบประกาศนี้?')) {
+        tempConfig.newsItems.splice(idx, 1); 
+        renderAdminNews(); 
+    }
+}
+
+function renderAdminFeatures() {
+    const list = document.getElementById('admin-features-list');
+    list.innerHTML = '';
+    Object.keys(tempConfig.features).forEach(key => {
+        list.innerHTML += `<div class="flex justify-between items-center p-3 bg-white border rounded-xl"><span class="font-mono text-sm">${key}</span><input type="checkbox" ${tempConfig.features[key]?'checked':''} onchange="tempConfig.features['${key}']=this.checked" class="w-5 h-5 accent-purple-600"></div>`;
+    });
+}
+
+function addNewFeature() {
+    const key = document.getElementById('new-feature-key').value.trim();
+    if(key) {
+        tempConfig.features[key] = false;
+        renderAdminFeatures();
+        document.getElementById('new-feature-key').value='';
+    }
+}
+
+function previewTheme(themeName) { applyTheme(themeName); tempConfig.theme = themeName; }
+
+// --- UTILS ---
+function toggleSidebar() { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); sb.classList.toggle('-translate-x-full'); ov.classList.toggle('hidden'); }
+function toggleHelpModal(show) { document.getElementById('helpModal').classList.toggle('hidden', !show); }
+function toggleCodeListModal(show) { document.getElementById('codeListModal').classList.toggle('hidden', !show); }
+
+function showToast(msg) { 
+    const t = document.getElementById('toast'); 
+    const tm = document.getElementById('toast-message');
+    if(t && tm) {
+        tm.innerText = msg; 
+        t.classList.remove('opacity-0','pointer-events-none','toast-hide'); 
+        t.classList.add('toast-show'); 
+        setTimeout(()=>{t.classList.remove('toast-show');t.classList.add('toast-hide');},2500); 
+    }
+}
+
+// --- PWA INSTALLATION ---
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => { 
+    e.preventDefault(); 
+    deferredPrompt = e; 
+    checkPwaStatus(); 
+});
+
+function isStandalone() { return (window.matchMedia('(display-mode: standalone)').matches) || (window.navigator.standalone) || document.referrer.includes('android-app://'); }
+
+function checkPwaStatus() { 
+    const sidebarBtn = document.getElementById('pwaInstallBtn'); 
+    const headerBtn = document.getElementById('headerInstallBtn'); 
+    
+    if(isStandalone()) { 
+        if(sidebarBtn) sidebarBtn.classList.add('hidden'); 
+        if(headerBtn) headerBtn.classList.add('hidden'); 
+        return; 
+    } 
+    
+    if(headerBtn) headerBtn.classList.remove('hidden'); 
+    if (sidebarBtn) { 
+        sidebarBtn.classList.remove('hidden'); 
+        sidebarBtn.onclick = installApp; 
+    } 
+}
+
+async function installApp() { 
+    if (deferredPrompt) { 
+        deferredPrompt.prompt(); 
+        const { outcome } = await deferredPrompt.userChoice; 
+        deferredPrompt = null; 
+        if(outcome === 'accepted') { 
+            checkPwaStatus(); 
+        } 
+        return; 
+    } 
+    document.getElementById('installGuideModal').classList.remove('hidden'); 
+}
+
+window.addEventListener('appinstalled', () => { 
+    console.log('App installed'); 
+    checkPwaStatus(); 
+});
+
+// --- GENERATE DYNAMIC MANIFEST ---
+const iconSvgUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23E63946' rx='80'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='900' font-style='normal' font-size='380'%3ES%3C/text%3E%3C/svg%3E";
+const manifestData = {
+    name: "SUNNY Stock",
+    short_name: "SUNNY",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#FFFFFF",
+    theme_color: "#E63946",
+    icons: [
+        {
+            src: iconSvgUrl,
+            sizes: "192x192 512x512",
+            type: "image/svg+xml",
+            purpose: "any maskable"
+        }
+    ]
+};
+const stringManifest = JSON.stringify(manifestData);
+const blob = new Blob([stringManifest], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
+
+// --- APP INIT ---
+window.addEventListener('DOMContentLoaded', () => { 
+    // 1. Init Firebase (Config)
+    initFirebase();
+    
+    // 2. Render Initial UI (UI)
+    renderSidebar();
+    
+    // 3. Setup Logic (Stock)
+    setupAutocomplete();
+    checkPwaStatus();
+
+    // 4. Switch System (Stock)
+    setTimeout(() => {
+        if(typeof switchSystem === 'function') switchSystem('WOOD');
+        if(typeof renderNews === 'function') renderNews();
+        
+        const s = document.getElementById('intro-splash');
+        if(s) {
+            s.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => s.remove(), 700);
+        }
+    }, 500); 
+});
