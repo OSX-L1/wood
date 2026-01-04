@@ -78,11 +78,16 @@ function addCalcItem() {
     let wM = (wInput >= 10) ? wInput / 100 : wInput;
     let hM = (hInput >= 10) ? hInput / 100 : hInput;
 
-    // --- 1. WOODEN BLINDS Logic (New) ---
+    // Load Config Values (With Fallbacks)
+    const woodConf = appConfig.calcSettings.wood || { priceBasswood: 789, priceFoamwood: 750, factor: 1.2, maxW: 2.40, minW: 0.80, minH: 1.00 };
+    const pvcConf = appConfig.calcSettings.pvc || { factor: 1.2, minW: 1.00, stepStartH: 2.00 };
+    const rollerConf = appConfig.calcSettings.roller || { fabricMult: 1.2, minArea: 1.2, eqExt: 1956, railTop: 200, railBot: 150, sling: 69 };
+
+    // --- 1. WOODEN BLINDS Logic ---
     if (calcMode === 'WOOD_CALC') {
-        // A. เช็คความกว้างเกินกำหนด (Warning)
-        if (wM > 2.40) {
-            const confirmCalc = confirm(`คำเตือน: มู่ลี่ไม้ทำความกว้างได้สูงสุดที่ 2.40 เมตรเท่านั้น\n\nคุณกรอกมา: ${wM.toFixed(2)} เมตร\n\nกด [ตกลง] เพื่อคำนวณราคาตามขนาดเดิม\nกด [ยกเลิก] เพื่อแก้ไขขนาด`);
+        // A. เช็คความกว้างเกินกำหนด (Warning from Config)
+        if (wM > woodConf.maxW) {
+            const confirmCalc = confirm(`คำเตือน: มู่ลี่ไม้ทำความกว้างได้สูงสุดที่ ${woodConf.maxW.toFixed(2)} เมตรเท่านั้น\n\nคุณกรอกมา: ${wM.toFixed(2)} เมตร\n\nกด [ตกลง] เพื่อคำนวณราคาตามขนาดเดิม\nกด [ยกเลิก] เพื่อแก้ไขขนาด`);
             if (!confirmCalc) return; // ยกเลิกการคำนวณ
         }
 
@@ -90,26 +95,27 @@ function addCalcItem() {
         const woodType = document.querySelector('input[name="woodType"]:checked').value;
         const userPrice = parseFloat(document.getElementById('calcPrice').value);
         
-        let defaultPrice = (woodType === 'BASSWOOD') ? 789 : 750;
+        // ใช้ราคาจาก Config
+        let defaultPrice = (woodType === 'BASSWOOD') ? woodConf.priceBasswood : woodConf.priceFoamwood;
         price = userPrice || defaultPrice; // ถ้ามี User Price ใช้ User Price, ถ้าไม่มีใช้ Default
 
         systemLabel = `มู่ลี่ไม้ (${woodType === 'BASSWOOD' ? 'Basswood' : 'Foamwood'})`;
         displayUnit = 'm';
 
-        // C. ปรับขนาดขั้นต่ำ (0.80 x 1.00)
-        let adjustW = (wM < 0.80) ? 0.80 : wM;
-        let adjustH = (hM < 1.00) ? 1.00 : hM;
+        // C. ปรับขนาดขั้นต่ำ (จาก Config)
+        let adjustW = (wM < woodConf.minW) ? woodConf.minW : wM;
+        let adjustH = (hM < woodConf.minH) ? woodConf.minH : hM;
 
         finalW = wM.toFixed(2);
         finalH = hM.toFixed(2);
 
-        // D. สูตร: กว้าง(ปรับ) x สูง(ปรับ) x 1.2 x ราคา
-        const area = adjustW * adjustH * 1.2;
+        // D. สูตร: กว้าง(ปรับ) x สูง(ปรับ) x Factor(Config) x ราคา
+        const area = adjustW * adjustH * woodConf.factor;
         totalPerSet = area * price;
 
         details = `ขนาดจริง: ${finalW} x ${finalH} ม.<br>
-                   เรทคำนวณ: ${adjustW.toFixed(2)} x ${adjustH.toFixed(2)} ม. (ขั้นต่ำ 0.80x1.00)<br>
-                   พื้นที่: ${area.toFixed(2)} ตร.ล. (x1.2)<br>
+                   เรทคำนวณ: ${adjustW.toFixed(2)} x ${adjustH.toFixed(2)} ม. (ขั้นต่ำ ${woodConf.minW}x${woodConf.minH})<br>
+                   พื้นที่: ${area.toFixed(2)} ตร.ล. (x${woodConf.factor})<br>
                    ราคา: ${area.toFixed(2)} x ${price.toLocaleString()} = ${totalPerSet.toLocaleString()} บ.
                    ${userPrice ? '<br>(กำหนดราคาเอง)' : ''}`;
     }
@@ -127,28 +133,32 @@ function addCalcItem() {
         finalH = hM.toFixed(2);
 
         // --- ส่วนคำนวณ ---
-        let adjustW = (wM < 1.00) ? 1.00 : wM;
+        // ใช้ Min Width จาก Config
+        let adjustW = (wM < pvcConf.minW) ? pvcConf.minW : wM;
 
-        let adjustH = 2.00; 
-        if (hM <= 2.01) adjustH = 2.00;
-        else if (hM <= 2.21) adjustH = 2.20;
-        else if (hM <= 2.41) adjustH = 2.40;
-        else if (hM <= 2.61) adjustH = 2.60;
-        else if (hM <= 2.81) adjustH = 2.80;
-        else if (hM <= 3.01) adjustH = 3.00;
-        else if (hM <= 3.31) adjustH = 3.30;
-        else adjustH = 3.50; 
+        // Step Height Logic (เริ่ม Step จาก Config)
+        let startStep = pvcConf.stepStartH; 
+        let adjustH = startStep; 
 
-        const area = adjustW * adjustH * 1.2;
+        if (hM <= startStep + 0.01) adjustH = startStep; // 2.00
+        else if (hM <= startStep + 0.21) adjustH = startStep + 0.20; // 2.20
+        else if (hM <= startStep + 0.41) adjustH = startStep + 0.40; // 2.40
+        else if (hM <= startStep + 0.61) adjustH = startStep + 0.60; // 2.60
+        else if (hM <= startStep + 0.81) adjustH = startStep + 0.80; // 2.80
+        else if (hM <= startStep + 1.01) adjustH = startStep + 1.00; // 3.00
+        else if (hM <= startStep + 1.31) adjustH = startStep + 1.30; // 3.30
+        else adjustH = 3.50; // Hardcap at 3.50 for now or standard max
+
+        const area = adjustW * adjustH * pvcConf.factor;
         totalPerSet = area * price;
 
         details = `ขนาดจริง: ${finalW} x ${finalH} ม.<br>
                    เรทคำนวณ: ${adjustW.toFixed(2)} x ${adjustH.toFixed(2)} ม.<br>
-                   พื้นที่: ${area.toFixed(2)} ตร.ล. (รวมคูณ 1.2)<br>
+                   พื้นที่: ${area.toFixed(2)} ตร.ล. (รวมคูณ ${pvcConf.factor})<br>
                    ราคา: ${area.toFixed(2)} x ${price.toLocaleString()} = ${totalPerSet.toLocaleString()} บ.`;
     }
 
-    // --- 3. ALU 25 Logic ---
+    // --- 3. ALU 25 Logic (Unchanged - Hardcoded Table) ---
     else if (calcMode === 'ALU25') {
         const roundCustom = (val) => Math.round(val / 10) * 10;
         let lookupW = roundCustom(wInput);
@@ -176,7 +186,7 @@ function addCalcItem() {
 
     } 
     
-    // --- 4. Roller / Ext Logic (Standard) ---
+    // --- 4. Roller / Ext Logic (Standard - Configurable) ---
     else {
         price = parseFloat(document.getElementById('calcPrice').value);
         if(!price) { alert('กรุณาระบุราคา'); return; }
@@ -187,20 +197,19 @@ function addCalcItem() {
         finalH = hM.toFixed(2);
         displayUnit = 'm';
 
-        const f = appConfig.calcSettings.factors;
-        let rawArea = wM * hM * f.fabricMult;
-        let finalArea = rawArea < f.minArea ? f.minArea : rawArea;
+        let rawArea = wM * hM * rollerConf.fabricMult;
+        let finalArea = rawArea < rollerConf.minArea ? rollerConf.minArea : rawArea;
         let fabricCost = finalArea * price;
 
         if(calcMode === 'EXT') {
-            const topRail = wM * f.railTop;
-            const botRail = wM * f.railBot;
-            const sling = hM * f.sling * 2;
-            totalPerSet = fabricCost + f.eqExt + topRail + botRail + sling;
-            details = `ราคาผ้า: ${finalW}x${finalH}x${f.fabricMult} = ${rawArea.toFixed(2)} ${rawArea<f.minArea?`(ปรับเป็น ${f.minArea})`:''} x ${price} = ${fabricCost.toLocaleString()} บ.<br>ค่าอุปกรณ์: ${f.eqExt.toLocaleString()} บ.<br>รางบน: ${finalW}x${f.railTop} = ${topRail.toLocaleString()} บ.<br>รางล่าง: ${finalW}x${f.railBot} = ${botRail.toLocaleString()} บ.<br>สลิง: ${finalH}x${f.sling}x2 = ${sling.toLocaleString()} บ.`;
+            const topRail = wM * rollerConf.railTop;
+            const botRail = wM * rollerConf.railBot;
+            const sling = hM * rollerConf.sling * 2;
+            totalPerSet = fabricCost + rollerConf.eqExt + topRail + botRail + sling;
+            details = `ราคาผ้า: ${finalW}x${finalH}x${rollerConf.fabricMult} = ${rawArea.toFixed(2)} ${rawArea<rollerConf.minArea?`(ปรับเป็น ${rollerConf.minArea})`:''} x ${price} = ${fabricCost.toLocaleString()} บ.<br>ค่าอุปกรณ์: ${rollerConf.eqExt.toLocaleString()} บ.<br>รางบน: ${finalW}x${rollerConf.railTop} = ${topRail.toLocaleString()} บ.<br>รางล่าง: ${finalW}x${rollerConf.railBot} = ${botRail.toLocaleString()} บ.<br>สลิง: ${finalH}x${rollerConf.sling}x2 = ${sling.toLocaleString()} บ.`;
         } else {
             totalPerSet = fabricCost;
-            details = `ราคาผ้า: ${finalW}x${finalH}x${f.fabricMult} = ${rawArea.toFixed(2)} ${rawArea<f.minArea?`(ปรับเป็น ${f.minArea})`:''} x ${price} = ${fabricCost.toLocaleString()} บ.`;
+            details = `ราคาผ้า: ${finalW}x${finalH}x${rollerConf.fabricMult} = ${rawArea.toFixed(2)} ${rawArea<rollerConf.minArea?`(ปรับเป็น ${rollerConf.minArea})`:''} x ${price} = ${fabricCost.toLocaleString()} บ.`;
         }
     }
     
