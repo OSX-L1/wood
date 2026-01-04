@@ -10,12 +10,12 @@ const firebaseConfig = {
 
 // --- GLOBAL VARIABLES ---
 let db = null, auth = null;
-let currentUser = null; // Holds the logged in user object
+let currentUser = null; 
 let configListenerSet = false;
-let tempQuotes = []; // Store loaded quotes for easy access
-let currentEditingId = null; // ID for local storage edit
-let currentEditingDocId = null; // Doc ID for firestore edit
-let tempConfig = null; // For Admin editing
+let tempQuotes = []; 
+let currentEditingId = null; 
+let currentEditingDocId = null; 
+let tempConfig = null; 
 
 // --- DEFAULT APP CONFIG ---
 const DEFAULT_CONFIG = {
@@ -29,7 +29,31 @@ const DEFAULT_CONFIG = {
     ],
     newsSettings: { speed: 3, showDate: true },
     newsItems: [],
-    calcSettings: { enabled: true, factors: { fabricMult: 1.2, minArea: 1.2, eqExt: 1956, railTop: 200, railBot: 150, sling: 69 } },
+    // UPDATED: เพิ่มการตั้งค่าราคาและสูตรสำหรับทุกหมวด (ยกเว้น Alu)
+    calcSettings: { 
+        enabled: true, 
+        wood: {
+            priceBasswood: 789,
+            priceFoamwood: 750,
+            factor: 1.2,
+            minW: 0.80,
+            minH: 1.00,
+            maxW: 2.40
+        },
+        pvc: {
+            factor: 1.2,
+            minW: 1.00,
+            stepStartH: 2.00
+        },
+        roller: { 
+            fabricMult: 1.2, 
+            minArea: 1.2, 
+            eqExt: 1956, 
+            railTop: 200, 
+            railBot: 150, 
+            sling: 69 
+        } 
+    },
     features: { experimental_mode: false }
 };
 
@@ -44,8 +68,12 @@ try {
     localStorage.removeItem('sunny_app_config');
 }
 
-// Ensure defaults exist
+// Ensure defaults exist (Deep Merge)
 if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
+if(!appConfig.calcSettings.wood) appConfig.calcSettings.wood = DEFAULT_CONFIG.calcSettings.wood;
+if(!appConfig.calcSettings.pvc) appConfig.calcSettings.pvc = DEFAULT_CONFIG.calcSettings.pvc;
+if(!appConfig.calcSettings.roller) appConfig.calcSettings.roller = DEFAULT_CONFIG.calcSettings.roller;
+
 if(!appConfig.theme) appConfig.theme = 'default';
 if(!appConfig.features) appConfig.features = DEFAULT_CONFIG.features;
 
@@ -56,17 +84,13 @@ function initFirebase() {
         auth = firebase.auth();
         db = firebase.firestore();
 
-        // Listen to Auth State Changes
         auth.onAuthStateChanged((user) => {
             if (user) {
-                // User is signed in
                 currentUser = user;
                 console.log("Auth Status:", user.isAnonymous ? "Guest Mode" : "Member Mode (" + user.email + ")");
                 
-                // Update UI to show User Profile (Function in ui.js)
                 if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
                 
-                // Load App Config (Realtime)
                 if (!configListenerSet) {
                     db.collection("app_settings").doc("config").onSnapshot((doc) => {
                         if (doc.exists) {
@@ -74,20 +98,22 @@ function initFirebase() {
                             if(typeof checkAndNotifyNews === 'function') checkAndNotifyNews(newData.newsItems || []);
                             appConfig = newData;
                             
-                            // Fallbacks
+                            // Deep Merge Defaults incase new fields added
                             if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
+                            if(!appConfig.calcSettings.wood) appConfig.calcSettings.wood = DEFAULT_CONFIG.calcSettings.wood;
+                            if(!appConfig.calcSettings.pvc) appConfig.calcSettings.pvc = DEFAULT_CONFIG.calcSettings.pvc;
+                            if(!appConfig.calcSettings.roller) appConfig.calcSettings.roller = DEFAULT_CONFIG.calcSettings.roller;
+
                             if(!appConfig.newsItems) appConfig.newsItems = [];
                             if(!appConfig.theme) appConfig.theme = 'default';
                             
                             localStorage.setItem('sunny_app_config', JSON.stringify(appConfig));
                             
-                            // Call UI updates if functions exist
                             if(typeof renderSidebar === 'function') renderSidebar(); 
                             if(typeof renderNews === 'function') renderNews(); 
                             if(typeof applyTheme === 'function') applyTheme(appConfig.theme);
                             if(currentSystem && typeof switchSystem === 'function') switchSystem(currentSystem);
                         } else { 
-                            // Create default config if missing
                             db.collection("app_settings").doc("config").set(appConfig); 
                         }
                     }, error => console.error("Config Listener Error:", error));
@@ -95,7 +121,6 @@ function initFirebase() {
                 }
 
             } else {
-                // No user, sign in anonymously
                 console.log("No user, signing in anonymously...");
                 auth.signInAnonymously().catch(e => console.error("Anon Auth Error:", e));
             }
