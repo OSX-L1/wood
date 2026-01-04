@@ -41,46 +41,43 @@
 
         /* MOBILE SPECIFIC ADJUSTMENTS (แก้ไขส่วนนี้) */
         @media (max-width: 768px) { 
-            /* 1. ปรับความสูงและตำแหน่ง Flexbox ของกรอบใหญ่ */
+            /* 1. ปรับตำแหน่ง: ย้ายกลับไป Top-Left (flex-start) */
             .header-custom-bg { 
-                min-height: 220px; /* ลดความสูงลงแต่พอให้เห็นภาพ */
+                min-height: 200px; /* ลดความสูงลงเล็กน้อย */
                 display: flex !important;
                 flex-direction: column;
-                justify-content: flex-end; /* ดันเนื้อหาลงด้านล่าง */
-                align-items: flex-start;   /* ชิดซ้าย */
-                padding: 1rem !important;  /* ขอบ 1rem */
+                justify-content: flex-start; /* กลับมาอยู่ด้านบน */
+                align-items: flex-start;   
+                padding: 1.5rem !important; /* เพิ่ม Padding ด้านบนให้นิดหน่อย */
             } 
 
-            /* 2. ปรับกล่องแก้ว (Glass Box) ให้เล็กและบางลง */
+            /* 2. ปรับกล่องแก้ว: ให้กระชับขึ้น */
             .header-content-glass { 
                 width: auto; 
-                max-width: 90%; 
-                margin: 0; /* ไม่ต้อง auto margin */
+                max-width: 85%; /* จำกัดความกว้างไม่ให้กินพื้นที่เกินไป */
+                margin: 0; 
                 display: inline-block; 
-                padding: 0.5rem 0.75rem; /* ลด Padding ภายใน */
-                background: rgba(255, 255, 255, 0.45) !important; /* ปรับให้ใสขึ้น (เดิม 0.6) */
-                backdrop-filter: blur(4px); 
-                border: 1px solid rgba(255,255,255,0.3);
-                border-radius: 1rem;
-                margin-bottom: 0.5rem; /* เว้นระยะจากขอบล่างนิดหน่อย */
+                padding: 0.75rem 1rem; 
+                background: rgba(255, 255, 255, 0.55) !important; /* ความใสระดับกลางๆ */
+                backdrop-filter: blur(6px); 
+                border: 1px solid rgba(255,255,255,0.4);
+                border-radius: 1.25rem;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             } 
 
-            /* 3. ย่อขนาดตัวอักษรในมือถือ */
             .header-content-glass h1 { 
-                font-size: 1.25rem !important; 
+                font-size: 1.5rem !important; 
                 line-height: 1.2 !important;
                 margin-top: 0.1rem;
             } 
             .header-content-glass h2 { 
-                font-size: 0.6rem !important; 
-                margin-bottom: 0.1rem !important;
-                opacity: 0.8;
+                font-size: 0.65rem !important; 
+                margin-bottom: 0.2rem !important;
+                opacity: 0.7;
             } 
             
-            /* ซ่อนปุ่มติดตั้งแอพใน Header ของมือถือ เพื่อประหยัดพื้นที่ (เพราะมีใน Sidebar แล้ว) */
-            #headerInstallBtn {
-                display: none !important;
-            }
+            /* ซ่อนปุ่มติดตั้งแอพใน Header ของมือถือ */
+            #headerInstallBtn { display: none !important; }
         }
     </style>
 </head>
@@ -118,9 +115,10 @@
                     
                     <h1 class="text-xl md:text-4xl font-black text-slate-800 tracking-tight leading-tight">ตรวจสอบ<span class="text-sunny-red italic block md:inline" id="productTypeLabel">สินค้า</span></h1>
                     
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <div class="mt-3 flex flex-col items-start gap-1 md:flex-row md:items-center md:gap-2">
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[10px] font-bold border border-green-100 shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>Online</span>
-                        <span class="text-slate-400 text-[10px]">Updated: <span id="lastUpdateDisplay" class="font-semibold text-slate-600">...</span></span>
+                        <span class="text-slate-500 text-[10px] bg-white/80 px-1.5 py-0.5 rounded backdrop-blur-sm">Updated: <span id="lastUpdateDisplay" class="font-semibold text-slate-700">...</span></span>
+                        
                         <button id="headerInstallBtn" onclick="installApp()" class="hidden md:hidden inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-800 text-white text-[10px] font-bold border border-slate-700 shadow-sm animate-pulse hover:bg-black">ติดตั้งแอพ</button>
                     </div>
                 </div>
