@@ -97,18 +97,6 @@
         </div>
     </div>
 
-    <div id="confirmModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-xs text-center animate-fade-in-up">
-            <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">ยืนยันการลบ?</h3>
-            <p class="text-slate-500 text-sm mb-6">คุณต้องการลบข้อมูลนี้ใช่หรือไม่?</p>
-            <div class="flex gap-2">
-                <button onclick="document.getElementById('confirmModal').classList.add('hidden')" class="flex-1 py-2.5 text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 font-bold text-sm transition-colors btn-bounce">ยกเลิก</button>
-                <button id="confirmDeleteBtn" class="flex-1 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 font-bold text-sm shadow-lg shadow-red-200 transition-colors btn-bounce">ลบข้อมูล</button>
-            </div>
-        </div>
-    </div>
-
     <button onclick="toggleSidebar()" class="md:hidden fixed top-3 left-3 z-50 bg-white/90 backdrop-blur p-2.5 rounded-xl shadow-lg border border-slate-100 text-slate-600 active:scale-95 transition-transform flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
         <span class="text-xs font-bold text-slate-700">เมนูสินค้า</span>
@@ -198,6 +186,21 @@
                                 <span class="font-bold text-slate-700">ระบบโซ่วน</span>
                             </label>
                         </div>
+                    </div>
+
+                    <div id="calcWoodSelectContainer" class="hidden mb-6 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                        <label class="block text-sm font-bold text-amber-800 mb-3">เลือกชนิดไม้:</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-amber-100 hover:border-amber-500 transition-all shadow-sm">
+                                <input type="radio" name="woodType" value="BASSWOOD" checked class="w-5 h-5 accent-amber-600">
+                                <span class="font-bold text-slate-700">Basswood (บาสวูด)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-amber-100 hover:border-amber-500 transition-all shadow-sm">
+                                <input type="radio" name="woodType" value="FOAMWOOD" class="w-5 h-5 accent-amber-600">
+                                <span class="font-bold text-slate-700">Foamwood (โฟมวูด)</span>
+                            </label>
+                        </div>
+                        <div class="text-[10px] text-amber-600 mt-2">* ความกว้างสูงสุดไม่เกิน 2.40 เมตร</div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
