@@ -225,12 +225,10 @@ function openConfig() {
     document.getElementById('conf-news-speed').value = tempConfig.newsSettings.speed || 3;
     document.getElementById('logoutBtn').classList.remove('hidden');
     document.getElementById('conf-calc-enabled').checked = tempConfig.calcSettings.enabled;
-    document.getElementById('factor-fabricMult').value = tempConfig.calcSettings.factors.fabricMult;
-    document.getElementById('factor-minArea').value = tempConfig.calcSettings.factors.minArea;
-    document.getElementById('factor-eqExt').value = tempConfig.calcSettings.factors.eqExt;
-    document.getElementById('factor-railTop').value = tempConfig.calcSettings.factors.railTop;
-    document.getElementById('factor-railBot').value = tempConfig.calcSettings.factors.railBot;
-    document.getElementById('factor-sling').value = tempConfig.calcSettings.factors.sling;
+    
+    // Setup Calculation Inputs (Dynamic)
+    renderAdminCalcInputs(); // เรียกฟังก์ชันสร้าง Input
+
     const theme = tempConfig.theme || 'default';
     const radios = document.getElementsByName('app-theme');
     for(const r of radios) { r.checked = (r.value === theme); }
@@ -242,10 +240,64 @@ function openConfig() {
     switchAdminTab('menu');
 }
 
+// ฟังก์ชันใหม่: สร้างหน้าจอตั้งค่าสูตรแบบแยกหมวด
+function renderAdminCalcInputs() {
+    const container = document.getElementById('tab-content-calc');
+    const w = tempConfig.calcSettings.wood;
+    const p = tempConfig.calcSettings.pvc;
+    const r = tempConfig.calcSettings.roller; // เดิมคือ factors
+
+    container.innerHTML = `
+        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between mb-4">
+            <span class="font-bold text-slate-700">เปิดใช้งานระบบคำนวณ</span>
+            <input type="checkbox" id="conf-calc-enabled" ${tempConfig.calcSettings.enabled ? 'checked' : ''} class="w-6 h-6 accent-sunny-red" onchange="tempConfig.calcSettings.enabled = this.checked">
+        </div>
+
+        <div class="space-y-6">
+            <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                <h3 class="font-bold text-amber-800 border-b border-amber-200 pb-2 mb-3 flex items-center gap-2">🪵 มู่ลี่ไม้ (Wood)</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-bold text-slate-500">ราคา Basswood (บาท)</label><input type="number" value="${w.priceBasswood}" onchange="tempConfig.calcSettings.wood.priceBasswood = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">ราคา Foamwood (บาท)</label><input type="number" value="${w.priceFoamwood}" onchange="tempConfig.calcSettings.wood.priceFoamwood = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">ตัวคูณ (เช่น 1.2)</label><input type="number" step="0.01" value="${w.factor}" onchange="tempConfig.calcSettings.wood.factor = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">กว้างสูงสุด (Max W)</label><input type="number" step="0.01" value="${w.maxW}" onchange="tempConfig.calcSettings.wood.maxW = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">กว้างขั้นต่ำ (Min W)</label><input type="number" step="0.01" value="${w.minW}" onchange="tempConfig.calcSettings.wood.minW = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">สูงขั้นต่ำ (Min H)</label><input type="number" step="0.01" value="${w.minH}" onchange="tempConfig.calcSettings.wood.minH = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                <h3 class="font-bold text-blue-800 border-b border-blue-200 pb-2 mb-3 flex items-center gap-2">🚪 ฉากกั้นห้อง (PVC)</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-bold text-slate-500">ตัวคูณ (เช่น 1.2)</label><input type="number" step="0.01" value="${p.factor}" onchange="tempConfig.calcSettings.pvc.factor = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">กว้างขั้นต่ำ (Min W)</label><input type="number" step="0.01" value="${p.minW}" onchange="tempConfig.calcSettings.pvc.minW = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">เริ่มปัดเศษความสูง (เมตร)</label><input type="number" step="0.01" value="${p.stepStartH}" onchange="tempConfig.calcSettings.pvc.stepStartH = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <h3 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-3 flex items-center gap-2">🪟 ม่านม้วน (Roller)</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-bold text-slate-500">ตัวคูณผ้า (Fabric Mult)</label><input type="number" step="0.1" value="${r.fabricMult}" onchange="tempConfig.calcSettings.roller.fabricMult = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">ขั้นต่ำ (Min Area)</label><input type="number" step="0.1" value="${r.minArea}" onchange="tempConfig.calcSettings.roller.minArea = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">อุปก. ภายนอก (Eq Ext)</label><input type="number" value="${r.eqExt}" onchange="tempConfig.calcSettings.roller.eqExt = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">รางบน (Rail Top)</label><input type="number" value="${r.railTop}" onchange="tempConfig.calcSettings.roller.railTop = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">รางล่าง (Rail Bot)</label><input type="number" value="${r.railBot}" onchange="tempConfig.calcSettings.roller.railBot = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">สลิง (Sling)</label><input type="number" value="${r.sling}" onchange="tempConfig.calcSettings.roller.sling = parseFloat(this.value)" class="w-full p-2 border rounded text-sm"></div>
+                </div>
+            </div>
+             <div class="text-[10px] text-slate-400 text-center">* มู่ลี่อลูมิเนียม ใช้ตารางราคาแยก ไม่สามารถแก้ไขในหน้านี้ได้</div>
+        </div>
+    `;
+}
+
 function closeConfig() { applyTheme(appConfig.theme); document.getElementById('adminConfigModal').classList.add('hidden'); }
 function saveConfig() {
     tempConfig.appTitle = document.getElementById('conf-app-title').value;
     tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value);
+    
+    // Note: tempConfig.calcSettings values are updated inline via onchange in HTML above
+    
     appConfig = tempConfig;
     applyTheme(appConfig.theme);
     db.collection("app_settings").doc("config").set(appConfig).then(()=>{showToast("บันทึกสำเร็จ");closeConfig();renderSidebar();});
@@ -266,6 +318,7 @@ function switchAdminTab(tab) {
     if(tab === 'news') renderAdminNews();
     if(tab === 'saved') renderQuotationsList('saved-quotations-list', 'all'); 
     if(tab === 'features') renderAdminFeatures();
+    // Tab Calc เรียกใช้ HTML static ที่ renderAdminCalcInputs สร้างไว้แล้ว
 }
 
 function renderAdminMenu() {
