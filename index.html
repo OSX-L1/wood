@@ -31,15 +31,10 @@
     <link rel="stylesheet" href="css/style.css">
     
     <style>
-        /* Base Header Height */
         .header-custom-bg { position: relative; min-height: 280px; }
-        
-        /* Desktop Adjustment */
-        @media (min-width: 768px) { 
-            .header-custom-bg { min-height: 380px; } 
-        }
+        @media (min-width: 768px) { .header-custom-bg { min-height: 380px; } }
 
-        /* MOBILE SPECIFIC ADJUSTMENTS */
+        /* MOBILE HEADER ADJUSTMENTS */
         @media (max-width: 768px) { 
             .header-custom-bg { 
                 min-height: 200px; 
@@ -139,16 +134,12 @@
         <div class="p-4 pt-16 md:p-8 pb-40 max-w-6xl mx-auto space-y-6">
             <div id="headerSection" class="bg-white rounded-[2rem] p-4 md:p-8 shadow-sm border border-slate-100 wooden-pattern relative overflow-hidden hover:shadow-lg transition-all duration-500 ease-in-out">
                 <div class="absolute top-0 right-0 w-48 h-48 bg-red-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-60 pointer-events-none"></div>
-                
                 <div id="headerContentWrapper" class="relative z-10 transition-all duration-300">
                     <h2 id="systemTitle" class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ระบบเช็คสต็อก</h2>
-                    
                     <h1 class="text-xl md:text-4xl font-black text-slate-800 tracking-tight leading-tight">ตรวจสอบ<span class="text-sunny-red italic block md:inline" id="productTypeLabel">สินค้า</span></h1>
-                    
                     <div class="mt-3 flex flex-col items-start gap-1 md:flex-row md:items-center md:gap-2">
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[10px] font-bold border border-green-100 shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>Online</span>
                         <span class="text-slate-500 text-[10px] bg-white/80 px-1.5 py-0.5 rounded backdrop-blur-sm">Updated: <span id="lastUpdateDisplay" class="font-semibold text-slate-700">...</span></span>
-                        
                         <button id="headerInstallBtn" onclick="installApp()" class="hidden md:hidden inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-800 text-white text-[10px] font-bold border border-slate-700 shadow-sm animate-pulse hover:bg-black">ติดตั้งแอพ</button>
                     </div>
                 </div>
@@ -172,20 +163,7 @@
 
             <div id="calculatorSection" class="hidden animate-fade-in-up">
                 <div class="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl border border-slate-100">
-                    
-                    <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center text-2xl shadow-sm" id="calcTitleIcon">🪟</div>
-                            <div>
-                                <h2 class="text-2xl font-black text-slate-800" id="calcTitleText">คำนวณราคา</h2>
-                                <p class="text-xs text-slate-400">ระบบคำนวณราคาเบื้องต้น</p>
-                            </div>
-                        </div>
-                        <button onclick="shareCurrentPage()" class="bg-slate-100 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 p-2 rounded-xl transition-all shadow-sm group relative" title="แชร์หน้านี้">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                            <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">คัดลอกลิงก์</span>
-                        </button>
-                    </div>
+                    <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4"><div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center text-2xl shadow-sm" id="calcTitleIcon">🪟</div><div><h2 class="text-2xl font-black text-slate-800" id="calcTitleText">คำนวณราคา</h2><p class="text-xs text-slate-400">ระบบคำนวณราคาเบื้องต้น</p></div></div>
                     
                     <div id="calcSystemSelectContainer" class="hidden mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <label class="block text-sm font-bold text-slate-600 mb-3">เลือกระบบ:</label>
@@ -232,8 +210,7 @@
                                     <th class="px-3 py-2"></th>
                                 </tr>
                             </thead>
-                            <tbody id="calcTableBody" class="text-slate-600 block md:table-row-group">
-                                </tbody>
+                            <tbody id="calcTableBody" class="text-slate-600 block md:table-row-group"></tbody>
                             <tfoot class="font-bold text-slate-800 bg-white border-t border-slate-200 block md:table-footer-group rounded-xl mt-2 md:mt-0 shadow-sm md:shadow-none p-3 md:p-0">
                                 <tr class="flex justify-between items-center md:table-row">
                                     <td colspan="3" class="px-3 py-3 text-left md:text-right">รวมทั้งหมด (<span id="totalItems">0</span> ชุด)</td>
@@ -254,9 +231,46 @@
         </div>
     </main>
 
-    <div id="adminLoginModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"><div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in-up"><h3 class="text-xl font-bold text-slate-800 mb-4 text-center">ผู้ดูแลระบบ</h3><input type="password" id="adminPassword" class="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 mb-4 focus:ring-2 focus:ring-sunny-red focus:outline-none" placeholder="รหัสผ่าน..."><p id="loginError" class="text-red-500 text-xs mb-4 text-center hidden">รหัสผ่านไม่ถูกต้อง</p><div class="flex gap-2"><button onclick="closeAdminLogin()" class="flex-1 py-2 text-slate-400 font-bold text-sm bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button><button onclick="handleLogin()" class="flex-1 py-2 bg-sunny-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-lg shadow-red-200">เข้าสู่ระบบ</button></div></div></div>
-    <div id="adminConfigModal" class="hidden fixed inset-0 z-[100] bg-white flex flex-col"><div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white shadow-sm z-10"><h2 class="text-lg font-black text-slate-800 flex items-center gap-2"><span class="text-sunny-red">⚙️</span> ตั้งค่าระบบ</h2><div class="flex items-center gap-2"><span id="admin-mode-status" class="text-xs font-bold text-green-600 mr-2">Online</span><button onclick="saveConfig()" class="bg-sunny-red text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 btn-bounce">บันทึก</button><button onclick="closeConfig()" class="text-slate-400 hover:text-slate-600 px-2 text-xl">✕</button></div></div><div class="flex border-b border-slate-200 overflow-x-auto"><button id="tab-btn-menu" onclick="switchAdminTab('menu')" class="px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap">จัดการเมนู</button><button id="tab-btn-news" onclick="switchAdminTab('news')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ข่าวสาร</button><button id="tab-btn-calc" onclick="switchAdminTab('calc')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">สูตรคำนวณ</button><button id="tab-btn-saved" onclick="switchAdminTab('saved')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ใบเสนอราคา</button><button id="tab-btn-theme" onclick="switchAdminTab('theme')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ธีม</button><button id="tab-btn-features" onclick="switchAdminTab('features')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">Features</button></div><div class="flex-1 overflow-y-auto p-4 bg-slate-50 custom-scrollbar"><div id="tab-content-menu" class="space-y-4 max-w-2xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200"><label class="block text-xs font-bold text-slate-400 uppercase mb-2">ชื่อแอพพลิเคชัน</label><input type="text" id="conf-app-title" class="w-full p-2 border rounded font-bold text-lg text-sunny-red"></div><div id="admin-menu-list" class="space-y-3"></div></div><div id="tab-content-news" class="hidden space-y-4 max-w-3xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between"><div><label class="font-bold text-slate-700">ความเร็วตัววิ่ง</label><p class="text-xs text-slate-400">1=ช้า, 5=เร็ว</p></div><input type="range" id="conf-news-speed" min="1" max="5" class="w-32 accent-sunny-red"></div><button onclick="addNewNewsItem()" class="w-full py-3 bg-white border-2 border-dashed border-slate-300 text-slate-400 font-bold rounded-xl hover:border-sunny-red hover:text-sunny-red transition-all">+ เพิ่มประกาศใหม่</button><div id="admin-news-list" class="space-y-3"></div></div><div id="tab-content-calc" class="hidden space-y-4 max-w-xl mx-auto"></div><div id="tab-content-saved" class="hidden space-y-4 max-w-2xl mx-auto"><div class="text-xs text-slate-400 mb-2">แสดงรายการใบเสนอราคาของสมาชิกทั้งหมด (Admin View)</div><div id="saved-quotations-list" class="space-y-2"></div></div><div id="tab-content-theme" class="hidden space-y-4 max-w-2xl mx-auto"><div class="grid grid-cols-2 gap-4"><label class="cursor-pointer block"><input type="radio" name="app-theme" value="default" class="peer sr-only" onchange="previewTheme('default')"><div class="p-4 rounded-xl border-2 peer-checked:border-sunny-red peer-checked:bg-red-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">☀️</div><div class="font-bold text-slate-700">Standard</div><div class="text-xs text-slate-400">ค่าเริ่มต้น</div></div></label><label class="cursor-pointer block"><input type="radio" name="app-theme" value="christmas" class="peer sr-only" onchange="previewTheme('christmas')"><div class="p-4 rounded-xl border-2 peer-checked:border-green-500 peer-checked:bg-green-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">🎄</div><div class="font-bold text-green-700">Christmas</div><div class="text-xs text-slate-400">เทศกาลคริสต์มาส</div></div></label></div></div><div id="tab-content-features" class="hidden space-y-4 max-w-xl mx-auto"><div class="bg-purple-50 p-4 rounded-xl border border-purple-100 mb-4"><h3 class="font-bold text-purple-700 text-sm mb-2">🚀 Feature Flags (Experimental)</h3><div id="admin-features-list" class="space-y-2"></div></div><div class="flex gap-2"><input type="text" id="new-feature-key" placeholder="Feature Key..." class="flex-1 p-2 border rounded text-sm"><button onclick="addNewFeature()" class="bg-purple-600 text-white px-3 py-2 rounded font-bold text-xs">Add</button></div></div></div><div class="p-4 border-t border-slate-200 bg-white"><button id="logoutBtn" onclick="logoutAdmin()" class="w-full py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 hidden">ออกจากระบบ Admin</button></div></div>
-    
+    <div id="adminLoginModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in-up">
+            <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">ผู้ดูแลระบบ</h3>
+            <input type="password" id="adminPassword" class="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 mb-4 focus:ring-2 focus:ring-sunny-red focus:outline-none" placeholder="รหัสผ่าน...">
+            <p id="loginError" class="text-red-500 text-xs mb-4 text-center hidden">รหัสผ่านไม่ถูกต้อง</p>
+            <div class="flex gap-2">
+                <button onclick="closeAdminLogin()" class="flex-1 py-2 text-slate-400 font-bold text-sm bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+                <button onclick="handleLogin()" class="flex-1 py-2 bg-sunny-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-lg shadow-red-200">เข้าสู่ระบบ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminConfigModal" class="hidden fixed inset-0 z-[100] bg-white flex flex-col">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white shadow-sm z-10">
+            <h2 class="text-lg font-black text-slate-800 flex items-center gap-2"><span class="text-sunny-red">⚙️</span> ตั้งค่าระบบ</h2>
+            <div class="flex items-center gap-2">
+                <span id="admin-mode-status" class="text-xs font-bold text-green-600 mr-2">Online</span>
+                <button onclick="saveConfig()" class="bg-sunny-red text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 btn-bounce">บันทึก</button>
+                <button onclick="closeConfig()" class="text-slate-400 hover:text-slate-600 px-2 text-xl">✕</button>
+            </div>
+        </div>
+        <div class="flex border-b border-slate-200 overflow-x-auto">
+            <button id="tab-btn-menu" onclick="switchAdminTab('menu')" class="px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap">จัดการเมนู</button>
+            <button id="tab-btn-news" onclick="switchAdminTab('news')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ข่าวสาร</button>
+            <button id="tab-btn-calc" onclick="switchAdminTab('calc')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">สูตรคำนวณ</button>
+            <button id="tab-btn-saved" onclick="switchAdminTab('saved')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ใบเสนอราคา</button>
+            <button id="tab-btn-theme" onclick="switchAdminTab('theme')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ธีม</button>
+            <button id="tab-btn-features" onclick="switchAdminTab('features')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">Features</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 bg-slate-50 custom-scrollbar">
+            <div id="tab-content-menu" class="space-y-4 max-w-2xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200"><label class="block text-xs font-bold text-slate-400 uppercase mb-2">ชื่อแอพพลิเคชัน</label><input type="text" id="conf-app-title" class="w-full p-2 border rounded font-bold text-lg text-sunny-red"></div><div id="admin-menu-list" class="space-y-3"></div></div>
+            <div id="tab-content-news" class="hidden space-y-4 max-w-3xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between"><div><label class="font-bold text-slate-700">ความเร็วตัววิ่ง</label><p class="text-xs text-slate-400">1=ช้า, 5=เร็ว</p></div><input type="range" id="conf-news-speed" min="1" max="5" class="w-32 accent-sunny-red"></div><button onclick="addNewNewsItem()" class="w-full py-3 bg-white border-2 border-dashed border-slate-300 text-slate-400 font-bold rounded-xl hover:border-sunny-red hover:text-sunny-red transition-all">+ เพิ่มประกาศใหม่</button><div id="admin-news-list" class="space-y-3"></div></div>
+            <div id="tab-content-calc" class="hidden space-y-4 max-w-xl mx-auto"></div>
+            <div id="tab-content-saved" class="hidden space-y-4 max-w-2xl mx-auto"><div class="text-xs text-slate-400 mb-2">แสดงรายการใบเสนอราคาของสมาชิกทั้งหมด (Admin View)</div><div id="saved-quotations-list" class="space-y-2"></div></div>
+            <div id="tab-content-theme" class="hidden space-y-4 max-w-2xl mx-auto"><div class="grid grid-cols-2 gap-4"><label class="cursor-pointer block"><input type="radio" name="app-theme" value="default" class="peer sr-only" onchange="previewTheme('default')"><div class="p-4 rounded-xl border-2 peer-checked:border-sunny-red peer-checked:bg-red-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">☀️</div><div class="font-bold text-slate-700">Standard</div><div class="text-xs text-slate-400">ค่าเริ่มต้น</div></div></label><label class="cursor-pointer block"><input type="radio" name="app-theme" value="christmas" class="peer sr-only" onchange="previewTheme('christmas')"><div class="p-4 rounded-xl border-2 peer-checked:border-green-500 peer-checked:bg-green-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">🎄</div><div class="font-bold text-green-700">Christmas</div><div class="text-xs text-slate-400">เทศกาลคริสต์มาส</div></div></label></div></div>
+            <div id="tab-content-features" class="hidden space-y-4 max-w-xl mx-auto"><div class="bg-purple-50 p-4 rounded-xl border border-purple-100 mb-4"><h3 class="font-bold text-purple-700 text-sm mb-2">🚀 Feature Flags (Experimental)</h3><div id="admin-features-list" class="space-y-2"></div></div><div class="flex gap-2"><input type="text" id="new-feature-key" placeholder="Feature Key..." class="flex-1 p-2 border rounded text-sm"><button onclick="addNewFeature()" class="bg-purple-600 text-white px-3 py-2 rounded font-bold text-xs">Add</button></div></div>
+        </div>
+        <div class="p-4 border-t border-slate-200 bg-white"><button id="logoutBtn" onclick="logoutAdmin()" class="w-full py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 hidden">ออกจากระบบ Admin</button></div>
+    </div>
+
     <div id="quotationModal" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white w-full max-w-2xl rounded-none md:rounded-xl shadow-2xl overflow-hidden animate-fade-in-up my-auto">
             <div class="p-8 bg-white" id="quotationContent">
