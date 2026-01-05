@@ -13,10 +13,8 @@ function execCmd(command, value = null) {
 function insertEmoji(idx, char, type = 'text') {
     const editorId = type === 'badge' ? `badge-edit-${idx}` : `news-edit-${idx}`;
     const pickerId = type === 'badge' ? `emoji-picker-badge-${idx}` : `emoji-picker-${idx}`;
-    
     const el = document.getElementById(editorId);
     if(!el) return;
-    
     el.focus();
     document.execCommand('insertText', false, char);
     const event = new Event('input', { bubbles: true });
@@ -57,29 +55,21 @@ function shareCurrentPage() {
     });
 }
 
-// --- URL PARSER (Deep Link Logic Updated) ---
+// --- URL PARSER (Deep Link Logic) ---
 function checkUrlParams() {
     const params = new URLSearchParams(window.location.search);
     const sharedMode = params.get('mode');
     
     if (sharedMode) {
         console.log("Deep Link Detected:", sharedMode);
-        
-        // 1. ซ่อนส่วนที่ไม่เกี่ยวข้องทันที (ค้นหา, ข่าว, Header)
         const searchSection = document.getElementById('searchSection');
         const newsContainer = document.getElementById('news-container');
-        // const headerSection = document.getElementById('headerSection'); // ถ้าอยากซ่อน Header ด้วยให้เปิดบรรทัดนี้
-        
         if(searchSection) searchSection.classList.add('hidden');
         if(newsContainer) newsContainer.classList.add('hidden');
-        // if(headerSection) headerSection.classList.add('hidden');
 
-        // 2. เรียกเปิดเครื่องคิดเลข (หน่วงเวลานิดหน่อยเพื่อให้ calc.js โหลดเสร็จ)
         setTimeout(() => {
             if(typeof switchCalcMode === 'function') {
                 switchCalcMode(sharedMode);
-                
-                // เลื่อนหน้าจอลงมาหาเครื่องคิดเลข
                 const calcSec = document.getElementById('calculatorSection');
                 if(calcSec) {
                     calcSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -150,13 +140,14 @@ function renderSidebar() {
     if (appConfig.calcSettings.enabled || isAdmin) {
         html += `<div class="px-6 mt-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between"><span>ระบบคำนวณราคา</span>${!appConfig.calcSettings.enabled ? '<span class="text-[9px] bg-red-100 text-red-500 px-1 rounded">Admin Only</span>' : ''}</div>`;
         
+        const calcClass = "group flex items-center px-6 py-3 text-slate-600 hover:bg-indigo-50 hover:text-indigo-900 transition-all duration-200 ease-out border-l-4 border-transparent hover:border-indigo-900";
+        
+        // Define Icons
         const iconRollerExt = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>`;
         const iconRollerInt = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>`;
         const iconPVC = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>`;
         const iconWood = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>`;
         const iconAlu = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.357a4 4 0 014.187 6.187H15" /></svg>`;
-
-        const calcClass = "group flex items-center px-6 py-3 text-slate-600 hover:bg-indigo-50 hover:text-indigo-900 transition-all duration-200 ease-out border-l-4 border-transparent hover:border-indigo-900";
 
         html += `
             <a href="#" onclick="switchCalcMode('EXT')" class="${calcClass}">
@@ -189,6 +180,80 @@ function renderSidebar() {
     
     renderUserSidebar(currentUser);
     checkPwaStatus();
+}
+
+// --- ADMIN MENU RENDERING (FIXED: Added Checkbox) ---
+function renderAdminMenu() {
+    const list = document.getElementById('admin-menu-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    tempConfig.menus.forEach((menu, idx) => {
+        // ... (Image Slots Logic) ...
+        const slots = [
+            { key: 'bgImage1', label: 'ช่องซ้าย (Left)' },
+            { key: 'bgImage2', label: 'ช่องกลาง (Center)' },
+            { key: 'bgImage3', label: 'ช่องขวา (Right)' }
+        ];
+
+        let slotsHtml = '';
+        slots.forEach(slot => {
+            const currentVal = menu[slot.key] || '';
+            const urls = currentVal.split(',').map(s => s.trim());
+            if (urls.length === 1 && urls[0] === '') urls.pop(); 
+
+            let inputsHtml = '';
+            urls.forEach((url, uIdx) => {
+                inputsHtml += `
+                    <div class="flex items-center gap-1 mb-1">
+                        <span class="text-[9px] text-slate-300 w-3 text-right">${uIdx+1}.</span>
+                        <input type="text" value="${url}" 
+                            onchange="updateMenuImage(${idx}, '${slot.key}', ${uIdx}, this.value)"
+                            class="flex-1 min-w-0 p-1.5 border border-slate-200 rounded text-[10px] text-slate-600 bg-white focus:ring-1 focus:ring-sunny-red focus:outline-none placeholder:text-slate-200" 
+                            placeholder="https://...">
+                        <button onclick="removeMenuImage(${idx}, '${slot.key}', ${uIdx})" class="text-slate-300 hover:text-red-500 p-1 flex items-center justify-center h-6 w-6 bg-slate-50 hover:bg-red-50 rounded transition-colors" title="ลบภาพ"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                    </div>
+                `;
+            });
+
+            slotsHtml += `
+                <div class="bg-slate-50 p-2 rounded border border-slate-100 flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[9px] text-slate-500 font-bold">${slot.label}</span>
+                        <button onclick="addMenuImage(${idx}, '${slot.key}')" class="text-[9px] bg-white border border-slate-200 hover:border-sunny-red hover:text-sunny-red px-2 py-0.5 rounded transition-colors shadow-sm flex items-center gap-1"><span>+</span> เพิ่มภาพ</button>
+                    </div>
+                    <div class="space-y-1 flex-1 overflow-y-auto max-h-32 custom-scrollbar">
+                        ${inputsHtml.length > 0 ? inputsHtml : '<div class="text-[9px] text-slate-300 italic text-center py-4 border-2 border-dashed border-slate-100 rounded">ไม่มีรูปภาพ</div>'}
+                    </div>
+                </div>
+            `;
+        });
+
+        // ----------------------------------------------------
+        // THIS IS THE FIXED PART: CHECKBOX IS BACK
+        // ----------------------------------------------------
+        list.innerHTML += `
+            <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-slate-100 rounded text-slate-500">${ICONS[menu.icon]||'?'}</div>
+                    <div class="flex-grow space-y-1">
+                        <input type="text" value="${menu.name}" onchange="tempConfig.menus[${idx}].name=this.value" class="w-full p-1 border rounded text-sm font-bold">
+                        <input type="text" value="${menu.sub}" onchange="tempConfig.menus[${idx}].sub=this.value" class="w-full p-1 border rounded text-xs text-slate-500">
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red cursor-pointer">
+                        <span class="text-[8px] text-slate-400 mt-1">แสดง</span>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 block">จัดการภาพพื้นหลัง (แยก 3 ช่องอิสระ)</label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        ${slotsHtml}
+                    </div>
+                    <div class="text-[9px] text-slate-400 mt-1">* กดปุ่มเพิ่มภาพเพื่อใส่ URL รูปภาพใหม่ โดยระบบจะสไลด์รูปวนไปตามลำดับ</div>
+                </div>
+            </div>`;
+    });
 }
 
 // Helpers attached to window for inline onclicks in Admin Menu
@@ -436,37 +501,7 @@ const blob = new Blob([stringManifest], {type: 'application/json'});
 const manifestURL = URL.createObjectURL(blob);
 document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
 
-// --- APP INIT (CORRECTED LOGIC) ---
-window.addEventListener('DOMContentLoaded', () => { 
-    initFirebase();
-    renderSidebar();
-    setupAutocomplete();
-    checkPwaStatus();
-    
-    // IMPORTANT: Check URL params first!
-    const params = new URLSearchParams(window.location.search);
-    const sharedMode = params.get('mode');
-
-    if (sharedMode) {
-        // CASE 1: Deep Link -> Load Calculator Only, Do NOT load Stock Search
-        checkUrlParams(); 
-    } else {
-        // CASE 2: Normal Entry -> Load Stock Search (Default)
-        setTimeout(() => {
-            if(typeof switchSystem === 'function') switchSystem('WOOD');
-            if(typeof renderNews === 'function') renderNews();
-        }, 500);
-    }
-
-    // Remove Splash Screen
-    const s = document.getElementById('intro-splash');
-    if(s) {
-        s.classList.add('opacity-0', 'pointer-events-none');
-        setTimeout(() => s.remove(), 700);
-    }
-});
-
-// --- ADMIN FUNCTIONS (Re-inserted for safety) ---
+// --- APP INIT (Admin Logic Fixed) ---
 function checkAdminLogin() { 
     if (localStorage.getItem('isAdminLoggedIn') === 'true') {
         openConfig(); 
@@ -624,3 +659,32 @@ function switchAdminTab(tab) {
     if(tab === 'saved') renderQuotationsList('saved-quotations-list', 'all'); 
     if(tab === 'features') renderAdminFeatures();
 }
+
+window.addEventListener('DOMContentLoaded', () => { 
+    initFirebase();
+    renderSidebar();
+    setupAutocomplete();
+    checkPwaStatus();
+    
+    // IMPORTANT: Check URL params first!
+    const params = new URLSearchParams(window.location.search);
+    const sharedMode = params.get('mode');
+
+    if (sharedMode) {
+        // CASE 1: Deep Link -> Load Calculator Only, Do NOT load Stock Search
+        checkUrlParams(); 
+    } else {
+        // CASE 2: Normal Entry -> Load Stock Search (Default)
+        setTimeout(() => {
+            if(typeof switchSystem === 'function') switchSystem('WOOD');
+            if(typeof renderNews === 'function') renderNews();
+        }, 500);
+    }
+
+    // Remove Splash Screen
+    const s = document.getElementById('intro-splash');
+    if(s) {
+        s.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => s.remove(), 700);
+    }
+});
