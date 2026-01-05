@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="theme-color" content="#E63946">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SUNNY Stock">
+    <meta name="application-name" content="SUNNY Stock">
+
+    <title>ระบบเช็คสต็อก & คำนวณราคา - SUNNY</title>
+
+    <link id="favicon" rel="icon" type="image/svg+xml" href="">
+    <link id="manifest-placeholder" rel="manifest" href="">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'Sarabun', 'sans-serif'] }, colors: { 'sunny-red': 'var(--sunny-red)', 'sunny-dark': 'var(--sunny-dark)', 'sunny-bg': '#F1FAEE' } } } }
+    </script>
+
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        /* Base Header Height */
+        .header-custom-bg { position: relative; min-height: 280px; }
+        
+        /* Desktop Adjustment */
+        @media (min-width: 768px) { 
+            .header-custom-bg { min-height: 380px; } 
+        }
+
+        /* MOBILE SPECIFIC ADJUSTMENTS */
+        @media (max-width: 768px) { 
+            /* 1. ปรับตำแหน่ง: ย้ายกลับไป Top-Left (flex-start) */
+            .header-custom-bg { 
+                min-height: 200px; 
+                display: flex !important;
+                flex-direction: column;
+                justify-content: flex-start; /* กลับมาอยู่ด้านบน */
+                align-items: flex-start;   
+                padding: 1.5rem !important; 
+            } 
+
+            /* 2. ปรับกล่องแก้ว: ให้กระชับขึ้น */
+            .header-content-glass { 
+                width: auto; 
+                max-width: 85%; 
+                margin: 0; 
+                display: inline-block; 
+                padding: 0.75rem 1rem; 
+                background: rgba(255, 255, 255, 0.55) !important; 
+                backdrop-filter: blur(6px); 
+                border: 1px solid rgba(255,255,255,0.4);
+                border-radius: 1.25rem;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            } 
+
+            .header-content-glass h1 { 
+                font-size: 1.5rem !important; 
+                line-height: 1.2 !important;
+                margin-top: 0.1rem;
+            } 
+            .header-content-glass h2 { 
+                font-size: 0.65rem !important; 
+                margin-bottom: 0.2rem !important;
+                opacity: 0.7;
+            } 
+            
+            /* ซ่อนปุ่มติดตั้งแอพใน Header ของมือถือ */
+            #headerInstallBtn { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-rose-50 via-slate-50 to-indigo-100 animate-gradient-xy h-[100dvh] font-sans text-slate-800 flex overflow-hidden noselect">
+
+    <div id="intro-splash" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-700 ease-out">
+        <h1 class="text-6xl font-black text-sunny-red italic tracking-tighter">SUNNY</h1>
+        <p class="text-sm font-bold text-slate-400 mt-4 tracking-widest">STOCK SYSTEM</p>
+    </div>
+    
+    <div id="xmas-scene"></div>
+    <div id="toast" class="fixed top-0 left-1/2 -translate-x-1/2 z-[200] opacity-0 pointer-events-none bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span id="toast-message" class="text-sm font-bold">บันทึกสำเร็จ</span></div>
+
+    <div id="installGuideModal" class="hidden fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex flex-col justify-end md:justify-center p-4 animate-fade-in-up" onclick="this.classList.add('hidden')">
+        <div class="bg-white rounded-t-2xl md:rounded-2xl p-6 shadow-2xl pb-10 md:pb-6 relative max-w-sm mx-auto w-full" onclick="event.stopPropagation()">
+            <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-4 md:hidden"></div>
+            <h3 id="installGuideTitle" class="font-bold text-lg text-slate-800 mb-4">ติดตั้งแอพ</h3>
+            <div id="installInstructions" class="space-y-4 text-sm text-slate-600"></div>
+            <button onclick="document.getElementById('installGuideModal').classList.add('hidden')" class="mt-6 w-full py-3 bg-sunny-red text-white rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 btn-bounce">เข้าใจแล้ว</button>
+        </div>
+    </div>
+    
+    <div id="historyModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-fade-in-up">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-2xl z-10">
+                <h3 class="font-bold text-slate-800 text-lg">📜 ประวัติใบเสนอราคา</h3>
+                <button onclick="document.getElementById('historyModal').classList.add('hidden')" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500">✕</button>
+            </div>
+            <div id="user-history-list" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-fade-in-up overflow-hidden" onclick="event.stopPropagation()">
+            <div class="p-6 bg-sunny-red text-white flex justify-between items-start">
+                <div><h3 class="font-bold text-xl mb-1">คู่มือการใช้งาน</h3><p class="text-red-100 text-xs">ระบบเช็คสต็อกและคำนวณราคา</p></div>
+                <button onclick="document.getElementById('helpModal').classList.add('hidden')" class="text-red-100 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg p-1">✕</button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div class="space-y-2"><h4 class="font-bold text-slate-800">1. การค้นหาสต็อก</h4><p class="text-sm text-slate-500">เลือกเมนูสินค้า พิมพ์รหัสเพื่อค้นหา</p></div>
+                <div class="space-y-2"><h4 class="font-bold text-slate-800">2. การคำนวณราคา</h4><p class="text-sm text-slate-500">เลือกเมนูคำนวณ ระบุขนาดและราคา</p></div>
+            </div>
+        </div>
+    </div>
+
+    <button onclick="toggleSidebar()" class="md:hidden fixed top-3 left-3 z-50 bg-white/90 backdrop-blur p-2.5 rounded-xl shadow-lg border border-slate-100 text-slate-600 active:scale-95 transition-transform flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        <span class="text-xs font-bold text-slate-700">เมนู</span>
+    </button>
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-2xl transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out border-r border-slate-100 flex flex-col h-full">
+        <div class="p-6 border-b border-slate-100 flex items-center gap-3 pt-12 md:pt-6">
+            <div class="w-10 h-10 bg-sunny-red rounded-lg flex items-center justify-center text-white font-black text-xl shadow-red-200 shadow-lg shrink-0">S</div>
+            <div><h1 class="font-black text-xl text-sunny-red italic tracking-tighter" id="app-title-display">SUNNY</h1><p class="text-[10px] text-slate-400 uppercase tracking-widest">Stock & Calc</p></div>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1" id="sidebar-menu-container"></nav>
+        <div class="p-6 border-t border-slate-100 space-y-3">
+            <div id="user-profile-section"></div>
+            <button id="pwaInstallBtn" class="hidden w-full flex items-center justify-center gap-2 bg-slate-800 text-white py-3 rounded-xl text-sm font-bold hover:bg-black transition-colors mb-2 btn-bounce">ติดตั้งแอพ</button>
+            <button onclick="checkAdminLogin()" class="w-full flex items-center justify-center gap-2 text-slate-300 hover:text-sunny-red py-2 rounded-xl text-xs transition-colors">Admin Mode</button>
+        </div>
+    </aside>
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <main class="flex-1 md:ml-72 h-full overflow-y-auto overflow-x-hidden scrolling-touch relative">
+        <div class="p-4 pt-16 md:p-8 pb-40 max-w-6xl mx-auto space-y-6">
+            <div id="headerSection" class="bg-white rounded-[2rem] p-4 md:p-8 shadow-sm border border-slate-100 wooden-pattern relative overflow-hidden hover:shadow-lg transition-all duration-500 ease-in-out">
+                <div class="absolute top-0 right-0 w-48 h-48 bg-red-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-60 pointer-events-none"></div>
+                
+                <div id="headerContentWrapper" class="relative z-10 transition-all duration-300">
+                    <h2 id="systemTitle" class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">ระบบเช็คสต็อก</h2>
+                    
+                    <h1 class="text-xl md:text-4xl font-black text-slate-800 tracking-tight leading-tight">ตรวจสอบ<span class="text-sunny-red italic block md:inline" id="productTypeLabel">สินค้า</span></h1>
+                    
+                    <div class="mt-3 flex flex-col items-start gap-1 md:flex-row md:items-center md:gap-2">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[10px] font-bold border border-green-100 shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>Online</span>
+                        <span class="text-slate-500 text-[10px] bg-white/80 px-1.5 py-0.5 rounded backdrop-blur-sm">Updated: <span id="lastUpdateDisplay" class="font-semibold text-slate-700">...</span></span>
+                        
+                        <button id="headerInstallBtn" onclick="installApp()" class="hidden md:hidden inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-800 text-white text-[10px] font-bold border border-slate-700 shadow-sm animate-pulse hover:bg-black">ติดตั้งแอพ</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="news-container" class="space-y-3 hidden"><div id="pinned-news-wrapper" class="space-y-3"></div><div id="scrolling-news-wrapper" class="bg-white border border-slate-200 rounded-xl shadow-sm relative overflow-hidden h-28 hidden"><div id="news-ticker-track" class="ticker-move p-2"></div></div></div>
+
+            <div id="searchSection" class="animate-fade-in-up">
+                <div class="relative max-w-xl mx-auto mb-8">
+                    <input type="text" id="productCodeInput" autocomplete="off" placeholder="กรอกรหัสสินค้า..." class="w-full bg-white border-2 border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-lg font-bold text-slate-700 placeholder-slate-300 focus:outline-none focus:border-sunny-red focus:ring-4 focus:ring-red-50 transition-all shadow-sm">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <button id="searchButton" onclick="searchProduct()" class="absolute right-2 top-2 bottom-2 bg-sunny-red text-white px-6 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 transition-all active:scale-95 btn-bounce">ค้นหา</button>
+                    <div id="suggestion-box" class="absolute top-full left-0 right-0 bg-white border border-slate-100 rounded-xl shadow-2xl mt-2 z-[60] max-h-80 overflow-y-auto hidden custom-scrollbar divide-y divide-slate-50"></div>
+                    <div id="codeListModal" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 max-h-60 overflow-y-auto custom-scrollbar p-2"><div id="browseListContainer"></div></div>
+                </div>
+                <div id="loadingIndicator" class="hidden flex flex-col items-center justify-center py-12"><span class="loader w-10 h-10 border-4 border-slate-200 border-t-sunny-red rounded-full mb-4"></span><span class="text-slate-400 font-bold animate-pulse">กำลังค้นหาข้อมูล...</span></div>
+                <div id="errorMessage" class="hidden text-center py-10 bg-white rounded-3xl border border-red-100 shadow-sm mx-auto max-w-sm"><div class="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">🤷‍♂️</div><h3 class="text-red-500 font-bold text-lg mb-1">ไม่พบข้อมูล</h3><p id="errorText" class="text-slate-400 text-sm">ลองตรวจสอบรหัสสินค้าอีกครั้ง</p></div>
+                <div id="initialMessage" class="text-center py-12 opacity-60"><div class="w-20 h-20 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🔍</div><p class="text-slate-400 font-medium">พิมพ์รหัสสินค้าเพื่อค้นหา</p><button onclick="toggleCodeListModal(true)" class="mt-2 text-sunny-red text-sm font-bold hover:underline">หรือเลือกจากรายการ</button></div>
+                <div id="productCard" class="hidden animate-fade-in-up"><div class="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl border border-slate-100 relative overflow-hidden mb-6"><div class="relative z-10"><div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-slate-100 pb-6"><div><span class="bg-slate-800 text-white px-3 py-1 rounded-lg text-xs font-bold tracking-wider mb-2 inline-block">CODE</span><h2 id="productCodeDisplay" class="text-4xl md:text-5xl font-black text-slate-800 tracking-tight"></h2><p id="productName" class="text-slate-500 text-lg mt-1 font-medium"></p></div><div class="text-right"><div class="text-xs text-slate-400 font-bold mb-1">สถานะสินค้า</div><div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl font-bold border border-green-100"><span class="w-2 h-2 rounded-full bg-green-500"></span> พร้อมจำหน่าย</div></div></div><div id="stockGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div></div></div></div>
+            </div>
+
+            <div id="calculatorSection" class="hidden animate-fade-in-up">
+                <div class="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl border border-slate-100">
+                    
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center text-2xl shadow-sm" id="calcTitleIcon">🪟</div>
+                            <div>
+                                <h2 class="text-2xl font-black text-slate-800" id="calcTitleText">คำนวณราคา</h2>
+                                <p class="text-xs text-slate-400">ระบบคำนวณราคาเบื้องต้น</p>
+                            </div>
+                        </div>
+                        <button onclick="shareCurrentPage()" class="bg-slate-100 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 p-2 rounded-xl transition-all shadow-sm group relative" title="แชร์หน้านี้">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                            <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">คัดลอกลิงก์</span>
+                        </button>
+                    </div>
+                    
+                    <div id="calcSystemSelectContainer" class="hidden mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <label class="block text-sm font-bold text-slate-600 mb-3">เลือกระบบ:</label>
+                        <div class="flex gap-4"><label class="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-sunny-red transition-all"><input type="radio" name="aluSystem" value="STD" checked class="w-5 h-5 accent-sunny-red"><span class="font-bold text-slate-700">ระบบธรรมดา</span></label><label class="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-sunny-red transition-all"><input type="radio" name="aluSystem" value="CHAIN" class="w-5 h-5 accent-sunny-red"><span class="font-bold text-slate-700">ระบบโซ่วน</span></label></div>
+                    </div>
+
+                    <div id="calcWoodSelectContainer" class="hidden mb-6">
+                        <label class="block text-sm font-bold text-slate-500 mb-3 ml-1">ชนิดไม้ (Wood Type)</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="relative group cursor-pointer">
+                                <input type="radio" name="woodType" value="BASSWOOD" checked class="peer sr-only">
+                                <div class="bg-white border-2 border-slate-100 rounded-2xl p-4 h-24 flex flex-col justify-center transition-all duration-300 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-100/50 peer-checked:translate-y-[-2px]"><span class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-1">Standard</span><span class="text-xl font-black text-slate-700 peer-checked:text-amber-700">Basswood</span><span class="text-[10px] text-slate-400 mt-1">ไม้จริงธรรมชาติ สวยงาม</span></div>
+                                <div class="absolute top-3 right-3 opacity-0 peer-checked:opacity-100 transition-all duration-300 transform scale-50 peer-checked:scale-100"><div class="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-sm"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div></div>
+                            </label>
+                            <label class="relative group cursor-pointer">
+                                <input type="radio" name="woodType" value="FOAMWOOD" class="peer sr-only">
+                                <div class="bg-white border-2 border-slate-100 rounded-2xl p-4 h-24 flex flex-col justify-center transition-all duration-300 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-100/50 peer-checked:translate-y-[-2px]"><span class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-1">Waterproof</span><span class="text-xl font-black text-slate-700 peer-checked:text-amber-700">Foamwood</span><span class="text-[10px] text-slate-400 mt-1">ไม้สังเคราะห์ กันน้ำ 100%</span></div>
+                                <div class="absolute top-3 right-3 opacity-0 peer-checked:opacity-100 transition-all duration-300 transform scale-50 peer-checked:scale-100"><div class="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-sm"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2 mt-3 px-1"><div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div><span class="text-[10px] text-slate-400">ขนาดความกว้างสูงสุด <span class="font-bold text-slate-600">2.40 เมตร</span></span></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                         <div class="space-y-4">
+                            <div><label class="block text-sm font-bold text-slate-600 mb-1">กว้าง (W)</label><input type="number" id="calcW" class="w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:border-sunny-red focus:ring-4 focus:ring-red-50 font-bold text-lg" placeholder="0.00 หรือ 000"></div>
+                            <div><label class="block text-sm font-bold text-slate-600 mb-1">สูง (H)</label><input type="number" id="calcH" class="w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:border-sunny-red focus:ring-4 focus:ring-red-50 font-bold text-lg" placeholder="0.00 หรือ 000"></div>
+                         </div>
+                         <div class="space-y-4">
+                            <div><label class="block text-sm font-bold text-slate-600 mb-1">ราคา/ชุด </label><input type="text" id="calcPrice" class="w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:border-sunny-red focus:ring-4 focus:ring-red-50 font-bold text-lg" placeholder="ระบุราคา"></div>
+                            <div><label class="block text-sm font-bold text-slate-600 mb-1">จำนวน (ชุด)</label><input type="number" id="calcQty" value="1" class="w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:border-sunny-red focus:ring-4 focus:ring-red-50 font-bold text-lg"></div>
+                            <button onclick="addCalcItem()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-black transition-all btn-bounce mt-4">+ เพิ่มรายการ</button>
+                         </div>
+                    </div>
+                    
+                    <div class="bg-slate-50 rounded-2xl p-2 md:p-4 border border-slate-100">
+                        <table class="w-full text-sm">
+                            <thead class="hidden md:table-header-group text-xs text-slate-400 uppercase bg-slate-100 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">รายการ</th>
+                                    <th class="px-3 py-2 text-left">ขนาด</th>
+                                    <th class="px-3 py-2 text-right">ราคา/ชุด</th>
+                                    <th class="px-3 py-2 text-right">รวม</th>
+                                    <th class="px-3 py-2"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="calcTableBody" class="text-slate-600 block md:table-row-group"></tbody>
+                            <tfoot class="font-bold text-slate-800 bg-white border-t border-slate-200 block md:table-footer-group rounded-xl mt-2 md:mt-0 shadow-sm md:shadow-none p-3 md:p-0">
+                                <tr class="flex justify-between items-center md:table-row">
+                                    <td colspan="3" class="px-3 py-3 text-left md:text-right">รวมทั้งหมด (<span id="totalItems">0</span> ชุด)</td>
+                                    <td class="px-3 py-3 text-right text-xl text-sunny-red" id="grandTotal">0.00</td>
+                                    <td class="hidden md:table-cell"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 flex gap-2"><button onclick="clearCalc()" class="px-4 py-2 text-red-400 hover:text-red-600 font-bold text-sm bg-red-50 rounded-xl transition-colors">ล้างข้อมูล</button><button onclick="showQuotationModal()" class="flex-1 px-4 py-2 bg-sunny-red text-white font-bold text-sm rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 transition-colors btn-bounce">สร้างใบเสนอราคา</button></div>
+                </div>
+            </div>
+            
+            <div class="mt-8 mb-6 no-print flex justify-center items-center opacity-80 hover:opacity-100 transition-opacity duration-300">
+                <img src="images/logo.png" alt="SUNNY Logo" class="h-16 w-auto object-contain">
+            </div>
+        </div>
+    </main>
+
+    <div id="adminLoginModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"><div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in-up"><h3 class="text-xl font-bold text-slate-800 mb-4 text-center">ผู้ดูแลระบบ</h3><input type="password" id="adminPassword" class="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 mb-4 focus:ring-2 focus:ring-sunny-red focus:outline-none" placeholder="รหัสผ่าน..."><p id="loginError" class="text-red-500 text-xs mb-4 text-center hidden">รหัสผ่านไม่ถูกต้อง</p><div class="flex gap-2"><button onclick="closeAdminLogin()" class="flex-1 py-2 text-slate-400 font-bold text-sm bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button><button onclick="handleLogin()" class="flex-1 py-2 bg-sunny-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-lg shadow-red-200">เข้าสู่ระบบ</button></div></div></div>
+    <div id="adminConfigModal" class="hidden fixed inset-0 z-[100] bg-white flex flex-col"><div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white shadow-sm z-10"><h2 class="text-lg font-black text-slate-800 flex items-center gap-2"><span class="text-sunny-red">⚙️</span> ตั้งค่าระบบ</h2><div class="flex items-center gap-2"><span id="admin-mode-status" class="text-xs font-bold text-green-600 mr-2">Online</span><button onclick="saveConfig()" class="bg-sunny-red text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-red-200 hover:bg-red-700 btn-bounce">บันทึก</button><button onclick="closeConfig()" class="text-slate-400 hover:text-slate-600 px-2 text-xl">✕</button></div></div><div class="flex border-b border-slate-200 overflow-x-auto"><button id="tab-btn-menu" onclick="switchAdminTab('menu')" class="px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap">จัดการเมนู</button><button id="tab-btn-news" onclick="switchAdminTab('news')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ข่าวสาร</button><button id="tab-btn-calc" onclick="switchAdminTab('calc')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">สูตรคำนวณ</button><button id="tab-btn-saved" onclick="switchAdminTab('saved')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ใบเสนอราคา</button><button id="tab-btn-theme" onclick="switchAdminTab('theme')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">ธีม</button><button id="tab-btn-features" onclick="switchAdminTab('features')" class="px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap">Features</button></div><div class="flex-1 overflow-y-auto p-4 bg-slate-50 custom-scrollbar"><div id="tab-content-menu" class="space-y-4 max-w-2xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200"><label class="block text-xs font-bold text-slate-400 uppercase mb-2">ชื่อแอพพลิเคชัน</label><input type="text" id="conf-app-title" class="w-full p-2 border rounded font-bold text-lg text-sunny-red"></div><div id="admin-menu-list" class="space-y-3"></div></div><div id="tab-content-news" class="hidden space-y-4 max-w-3xl mx-auto"><div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between"><div><label class="font-bold text-slate-700">ความเร็วตัววิ่ง</label><p class="text-xs text-slate-400">1=ช้า, 5=เร็ว</p></div><input type="range" id="conf-news-speed" min="1" max="5" class="w-32 accent-sunny-red"></div><button onclick="addNewNewsItem()" class="w-full py-3 bg-white border-2 border-dashed border-slate-300 text-slate-400 font-bold rounded-xl hover:border-sunny-red hover:text-sunny-red transition-all">+ เพิ่มประกาศใหม่</button><div id="admin-news-list" class="space-y-3"></div></div><div id="tab-content-calc" class="hidden space-y-4 max-w-xl mx-auto"></div><div id="tab-content-saved" class="hidden space-y-4 max-w-2xl mx-auto"><div class="text-xs text-slate-400 mb-2">แสดงรายการใบเสนอราคาของสมาชิกทั้งหมด (Admin View)</div><div id="saved-quotations-list" class="space-y-2"></div></div><div id="tab-content-theme" class="hidden space-y-4 max-w-2xl mx-auto"><div class="grid grid-cols-2 gap-4"><label class="cursor-pointer block"><input type="radio" name="app-theme" value="default" class="peer sr-only" onchange="previewTheme('default')"><div class="p-4 rounded-xl border-2 peer-checked:border-sunny-red peer-checked:bg-red-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">☀️</div><div class="font-bold text-slate-700">Standard</div><div class="text-xs text-slate-400">ค่าเริ่มต้น</div></div></label><label class="cursor-pointer block"><input type="radio" name="app-theme" value="christmas" class="peer sr-only" onchange="previewTheme('christmas')"><div class="p-4 rounded-xl border-2 peer-checked:border-green-500 peer-checked:bg-green-50 bg-white hover:bg-slate-50 transition-all text-center"><div class="text-2xl mb-2">🎄</div><div class="font-bold text-green-700">Christmas</div><div class="text-xs text-slate-400">เทศกาลคริสต์มาส</div></div></label></div></div><div id="tab-content-features" class="hidden space-y-4 max-w-xl mx-auto"><div class="bg-purple-50 p-4 rounded-xl border border-purple-100 mb-4"><h3 class="font-bold text-purple-700 text-sm mb-2">🚀 Feature Flags (Experimental)</h3><div id="admin-features-list" class="space-y-2"></div></div><div class="flex gap-2"><input type="text" id="new-feature-key" placeholder="Feature Key..." class="flex-1 p-2 border rounded text-sm"><button onclick="addNewFeature()" class="bg-purple-600 text-white px-3 py-2 rounded font-bold text-xs">Add</button></div></div></div><div class="p-4 border-t border-slate-200 bg-white"><button id="logoutBtn" onclick="logoutAdmin()" class="w-full py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 hidden">ออกจากระบบ Admin</button></div></div>
+
+    <div id="quotationModal" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-2xl rounded-none md:rounded-xl shadow-2xl overflow-hidden animate-fade-in-up my-auto">
+            <div class="p-8 bg-white" id="quotationContent">
+                <div class="flex justify-between items-start mb-8 border-b border-slate-100 pb-6">
+                    <div><h1 class="text-3xl font-black text-sunny-red italic tracking-tighter">SUNNY</h1><p class="text-sm text-slate-500 font-bold mt-1">QUOTATION / ใบเสนอราคา</p></div>
+                    <div class="text-right"><div class="text-xs text-slate-400 uppercase font-bold">วันที่</div><div class="font-bold text-slate-800" id="qDate"></div><div class="text-xs text-slate-400 uppercase font-bold mt-2">ประเภท</div><div class="font-bold text-sunny-red bg-red-50 px-2 py-0.5 rounded" id="qType"></div></div>
+                </div>
+                <div class="mb-6">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200"><tr><th class="py-3 pl-4 text-left rounded-l-lg">รายการ</th><th class="py-3 text-center">จำนวน</th><th class="py-3 text-right">ราคา/ชุด</th><th class="py-3 pr-4 text-right rounded-r-lg">รวม</th></tr></thead>
+                        <tbody id="qBody" class="text-slate-700 divide-y divide-slate-100"></tbody>
+                        <tfoot class="font-bold text-slate-800 border-t-2 border-slate-100"><tr><td colspan="3" class="pt-4 text-right pr-4 text-base">ยอดรวมสุทธิ</td><td class="pt-4 text-right text-xl text-sunny-red" id="qGrandTotal"></td></tr></tfoot>
+                    </table>
+                </div>
+                <div id="qDetails" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs text-slate-600 space-y-2 mb-6"><h4 class="font-bold text-slate-700 mb-2">รายละเอียดการคำนวณ:</h4><div id="qDetailContent"></div></div>
+                <div class="text-center text-[10px] text-slate-300 font-mono mt-8 border-t border-slate-50 pt-4">Generated by SUNNY STOCK SYSTEM</div>
+            </div>
+            <div class="bg-slate-50 p-4 flex gap-2 border-t border-slate-200 no-print">
+                <button onclick="toggleQDetails()" class="px-4 py-2 text-slate-500 font-bold text-xs bg-white border border-slate-200 rounded-lg hover:bg-slate-100">แสดงวิธีทำ</button>
+                <div class="flex-grow"></div>
+                <button onclick="saveCurrentQuotation()" class="px-4 py-2 bg-blue-500 text-white font-bold text-xs rounded-lg hover:bg-blue-600 shadow-sm">บันทึก</button>
+                <button onclick="captureQuotation()" class="px-4 py-2 bg-sunny-red text-white font-bold text-xs rounded-lg hover:bg-red-700 shadow-lg shadow-red-200 flex items-center gap-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> ดาวน์โหลดรูป</button>
+                <button onclick="closeQuotation()" class="px-4 py-2 text-slate-400 hover:text-red-500 font-bold text-xs">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/stock.js"></script>
+    <script src="js/calc.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+</html>
