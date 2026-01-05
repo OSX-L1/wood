@@ -8,8 +8,13 @@ const EMOJI_LIST = [
     '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'
 ];
 
-// ตัวแปรสำหรับ Admin Mode
-let tempConfig = {}; 
+let tempConfig = {}; // สำหรับ Admin
+
+// --- SAFETY VALVE: บังคับลบหน้าโลโก้เสมอเมื่อผ่านไป 3.5 วินาที (ป้องกันการค้าง) ---
+setTimeout(() => {
+    const s = document.getElementById('intro-splash');
+    if(s) s.remove();
+}, 3500);
 
 function execCmd(command, value = null) {
     document.execCommand(command, false, value);
@@ -27,141 +32,125 @@ function showToast(msg) {
 }
 
 // =========================================
-// 2. CORE LOGIC: INIT APP (Fail-Safe Version)
+// 2. MAIN SYSTEM START (ใช้ window.onload เพื่อความชัวร์)
 // =========================================
-window.addEventListener('DOMContentLoaded', () => { 
-    
-    // --- 1. FORCE REMOVE SPLASH SCREEN FIRST (แก้ปัญหาค้างแน่นอน) ---
-    setTimeout(() => {
-        const s = document.getElementById('intro-splash');
-        if(s) {
-            s.style.opacity = '0';
-            s.style.pointerEvents = 'none';
-            setTimeout(() => s.remove(), 1000);
-        }
-    }, 1000); // รอ 1 วิเพื่อให้เห็นโลโก้แป๊บนึง
+window.addEventListener('load', () => {
+    console.log("🟢 System Loaded. Initializing...");
 
-    // --- 2. TRY INIT SYSTEM ---
+    // 1. ลองเชื่อมต่อฐานข้อมูล
     try {
         if(typeof initFirebase === 'function') initFirebase();
-        if(typeof checkPwaStatus === 'function') checkPwaStatus();
-        if(typeof setupAutocomplete === 'function') setupAutocomplete();
-    } catch (e) {
-        console.error("System Init Error:", e);
-    }
+    } catch(e) { console.error("Firebase Init Failed:", e); }
 
-    // --- 3. CHECK MODE (Deep Link vs Normal) ---
+    // 2. ตรวจสอบว่าเข้ามาแบบไหน (ปกติ หรือ ลิ้งค์แชร์)
     const params = new URLSearchParams(window.location.search);
     const sharedMode = params.get('mode');
 
     if (sharedMode) {
-        // >>> CASE A: Standalone Mode (Shared Link)
-        console.log("🚀 Standalone Mode Active:", sharedMode);
-        initStandaloneMode(sharedMode);
+        // >>> โหมดลิ้งค์แชร์ (Deep Link / Standalone)
+        startStandaloneMode(sharedMode);
     } else {
-        // >>> CASE B: Normal Mode
-        console.log("🟢 Normal Mode Active");
-        initNormalMode();
+        // >>> โหมดปกติ (Normal)
+        startNormalMode();
     }
+
+    // 3. ลบ Splash Screen (แบบปกติ)
+    setTimeout(() => {
+        const s = document.getElementById('intro-splash');
+        if(s) {
+            s.style.opacity = '0';
+            setTimeout(() => s.remove(), 1000);
+        }
+    }, 1000);
 });
 
-// --- ฟังก์ชันโหลดหน้าปกติ ---
-function initNormalMode() {
-    renderSidebar(); 
-    if(typeof currentUser !== 'undefined') renderUserSidebar(currentUser);
+// --- ฟังก์ชันเริ่มโหมดปกติ ---
+function startNormalMode() {
+    console.log("Running Normal Mode");
+    checkPwaStatus();
+    renderSidebar();
     
-    // โหลดข่าว
-    setTimeout(() => {
-        if(typeof renderNews === 'function') renderNews();
-    }, 500);
-
-    // เปิดหน้าค้นหา (WOOD)
+    if(typeof setupAutocomplete === 'function') setupAutocomplete();
+    
+    // โหลดหน้าแรก (STOCK) และ ข่าว
     setTimeout(() => {
         if(typeof switchSystem === 'function') switchSystem('WOOD');
-    }, 600);
+        if(typeof renderNews === 'function') renderNews();
+        if(typeof currentUser !== 'undefined') renderUserSidebar(currentUser);
+    }, 200);
 }
 
-// --- ฟังก์ชันโหลดหน้าแชร์ ---
-function initStandaloneMode(mode) {
-    // 1. ซ่อน UI ทั้งหมด
-    const hideList = ['sidebar', 'sidebarOverlay', 'headerSection', 'searchSection', 'news-container', 'user-profile-section'];
-    hideList.forEach(id => {
+// --- ฟังก์ชันเริ่มโหมดแชร์ (Standalone) ---
+function startStandaloneMode(mode) {
+    console.log("🚀 Running Standalone Mode:", mode);
+    
+    // 1. ลบองค์ประกอบที่ไม่ใช่ออกไปเลย (ไม่ใช่แค่ซ่อน)
+    const idsToRemove = ['sidebar', 'sidebarOverlay', 'headerSection', 'searchSection', 'news-container', 'user-profile-section'];
+    idsToRemove.forEach(id => {
         const el = document.getElementById(id);
-        if(el) el.classList.add('hidden');
+        if(el) el.style.display = 'none'; // ใช้ display:none แทน class hidden เพื่อความชัวร์
     });
 
-    // 2. ปรับ CSS Main ให้เต็มจอ
+    // 2. ปรับ Layout ให้เต็มจอ
     const mainContent = document.querySelector('main');
     if(mainContent) {
-        mainContent.classList.remove('md:ml-72');
-        mainContent.classList.add('w-full', 'min-h-screen', 'bg-slate-50', 'flex', 'justify-center', 'items-start', 'pt-4');
+        mainContent.style.marginLeft = '0px';
+        mainContent.style.width = '100%';
+        mainContent.style.display = 'flex';
+        mainContent.style.justifyContent = 'center';
+        mainContent.style.paddingTop = '20px';
     }
 
-    // 3. ซ่อนปุ่มเมนูมือถือ
-    const mobileToggle = document.querySelector('button[onclick="toggleSidebar()"]');
-    if(mobileToggle) mobileToggle.classList.add('hidden');
+    // 3. ซ่อนปุ่มเปิดเมนูมือถือ
+    const toggles = document.querySelectorAll('button[onclick="toggleSidebar()"]');
+    toggles.forEach(t => t.style.display = 'none');
 
-    // 4. เปิดเครื่องคิดเลข
+    // 4. เปิดเครื่องคิดเลขทันที
     setTimeout(() => {
         if(typeof switchCalcMode === 'function') {
             switchCalcMode(mode);
+            
             const calcSec = document.getElementById('calculatorSection');
             if(calcSec) {
                 calcSec.classList.remove('hidden');
-                calcSec.scrollIntoView({ behavior: 'auto', block: 'start' });
+                calcSec.style.display = 'block';
+                
+                // ปรับแต่ง UI เครื่องคิดเลขให้ดูดีตอนอยู่เดี่ยวๆ
+                const innerBox = calcSec.querySelector('.bg-white');
+                if(innerBox) {
+                    innerBox.style.boxShadow = 'none';
+                    innerBox.style.border = 'none';
+                }
             }
         }
-    }, 500);
+    }, 300);
 }
 
 // =========================================
-// 3. AUTH & UTILS
+// 3. UI RENDERERS
 // =========================================
-function loginWithGoogle() {
-    if (!auth) return;
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).then((result) => {
-        showToast(`ยินดีต้อนรับ ${result.user.displayName}`);
-        renderUserSidebar(result.user);
-    }).catch((error) => {
-        console.error(error);
-        alert("Login Error: " + error.message);
-    });
-}
-
-function logoutUser() {
-    if (!auth) return;
-    if (confirm("ต้องการออกจากระบบหรือไม่?")) {
-        auth.signOut().then(() => {
-            showToast("ออกจากระบบแล้ว");
-            renderUserSidebar(null);
-        });
-    }
-}
-
-function shareCurrentPage() {
-    const baseUrl = window.location.origin + window.location.pathname;
-    const shareUrl = `${baseUrl}?mode=${calcMode}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast("คัดลอกลิงก์แล้ว!");
-    }).catch(err => {
-        prompt("Copy Link:", shareUrl);
-    });
-}
-
 function renderSidebar() {
     const container = document.getElementById('sidebar-menu-container');
     if (!container) return;
     
-    // ... (Stock Menu Code) ...
+    // ป้องกัน Error กรณี appConfig ยังไม่มา
+    if (typeof appConfig === 'undefined') {
+        console.warn("appConfig not ready, retrying...");
+        setTimeout(renderSidebar, 500);
+        return;
+    }
+
     let html = `<div class="px-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">เช็คสต็อกสินค้า</div>`;
-    if(appConfig && appConfig.menus) {
+    
+    if(appConfig.menus) {
         appConfig.menus.forEach(menu => {
             if (!menu.active) return;
-            const activeClass = currentSystem === menu.id 
+            // Handle undefined ICONS
+            const iconSvg = (typeof ICONS !== 'undefined' && ICONS[menu.icon]) ? ICONS[menu.icon] : '<span class="text-xl">📦</span>';
+            const activeClass = (typeof currentSystem !== 'undefined' && currentSystem === menu.id)
                 ? 'bg-red-50 text-sunny-red border-sunny-red' 
                 : 'border-transparent text-slate-600 hover:bg-red-100 hover:text-red-700 hover:border-red-600';
-            const iconSvg = (typeof ICONS !== 'undefined' && ICONS[menu.icon]) ? ICONS[menu.icon] : (typeof ICONS !== 'undefined' ? ICONS['wood'] : '');
+                
             html += `
                 <a href="#" onclick="switchSystem('${menu.id}')" class="menu-item ${activeClass} group flex items-center px-6 py-3 transition-all duration-200 ease-out border-l-4">
                     <div class="w-8 flex justify-center mr-2 transition-transform group-hover:scale-110 duration-200">${iconSvg}</div>
@@ -170,32 +159,28 @@ function renderSidebar() {
         });
     }
 
-    // ... (Calculator Menu Code) ...
+    // Calculator Menu
     const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
-    if ((appConfig && appConfig.calcSettings && appConfig.calcSettings.enabled) || isAdmin) {
+    if ((appConfig.calcSettings && appConfig.calcSettings.enabled) || isAdmin) {
         html += `<div class="px-6 mt-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between"><span>ระบบคำนวณราคา</span>${!appConfig.calcSettings.enabled ? '<span class="text-[9px] bg-red-100 text-red-500 px-1 rounded">Admin Only</span>' : ''}</div>`;
         const calcClass = "group flex items-center px-6 py-3 text-slate-600 hover:bg-indigo-50 hover:text-indigo-900 transition-all duration-200 ease-out border-l-4 border-transparent hover:border-indigo-900";
         
-        // Simple Icons to prevent reference error
-        const iExt = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>`;
-        const iInt = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>`;
-        const iPvc = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>`;
-        const iWood = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>`;
-        const iAlu = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.357a4 4 0 014.187 6.187H15"/></svg>`;
+        // Icons
+        const iDef = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 4h6m-6 4h6M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
 
         html += `
-            <a href="#" onclick="switchCalcMode('EXT')" class="${calcClass}"><div class="w-8 mr-2">${iExt}</div><span>ม่านม้วนภายนอก</span></a>
-            <a href="#" onclick="switchCalcMode('INT')" class="${calcClass}"><div class="w-8 mr-2">${iInt}</div><span>ม่านม้วน (ภายใน)</span></a>
-            <a href="#" onclick="switchCalcMode('PVC_CALC')" class="${calcClass}"><div class="w-8 mr-2">${iPvc}</div><span>ฉากกั้นห้อง PVC</span></a>
-            <a href="#" onclick="switchCalcMode('WOOD_CALC')" class="${calcClass}"><div class="w-8 mr-2">${iWood}</div><span>มู่ลี่ไม้</span></a>
-            <a href="#" onclick="switchCalcMode('ALU25')" class="${calcClass}"><div class="w-8 mr-2">${iAlu}</div><span>มู่ลี่อลูมิเนียม 25mm.</span></a>
+            <a href="#" onclick="switchCalcMode('EXT')" class="${calcClass}"><div class="w-8 mr-2">${iDef}</div><span>ม่านม้วนภายนอก</span></a>
+            <a href="#" onclick="switchCalcMode('INT')" class="${calcClass}"><div class="w-8 mr-2">${iDef}</div><span>ม่านม้วน (ภายใน)</span></a>
+            <a href="#" onclick="switchCalcMode('PVC_CALC')" class="${calcClass}"><div class="w-8 mr-2">${iDef}</div><span>ฉากกั้นห้อง PVC</span></a>
+            <a href="#" onclick="switchCalcMode('WOOD_CALC')" class="${calcClass}"><div class="w-8 mr-2">${iDef}</div><span>มู่ลี่ไม้</span></a>
+            <a href="#" onclick="switchCalcMode('ALU25')" class="${calcClass}"><div class="w-8 mr-2">${iDef}</div><span>มู่ลี่อลูมิเนียม 25mm.</span></a>
         `;
     }
     
     container.innerHTML = html;
     
     const titleEl = document.getElementById('app-title-display');
-    if(titleEl && appConfig) titleEl.innerText = appConfig.appTitle;
+    if(titleEl && appConfig.appTitle) titleEl.innerText = appConfig.appTitle;
 }
 
 function renderUserSidebar(user) {
@@ -203,208 +188,210 @@ function renderUserSidebar(user) {
     if (!container) return; 
 
     if (user && !user.isAnonymous) {
-        container.innerHTML = `
-            <div class="flex items-center gap-3 p-3 bg-red-50 rounded-xl border border-red-100 mb-2">
-                <div class="flex-1 min-w-0">
-                    <div class="text-xs font-bold text-slate-400">สวัสดี,</div>
-                    <div class="text-sm font-bold text-slate-700 truncate">${user.displayName || 'User'}</div>
-                </div>
-                <button onclick="logoutUser()" class="text-slate-400 hover:text-red-500 p-1" title="ออกจากระบบ">ออก</button>
-            </div>
-            <button onclick="openHistoryModal()" class="w-full mb-4 flex items-center justify-center gap-2 bg-white text-slate-600 border border-slate-200 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-50 hover:text-sunny-red hover:border-red-100 transition-all shadow-sm btn-bounce">ดูประวัติ</button>
-        `;
+        container.innerHTML = `<div class="p-3 bg-red-50 rounded-xl mb-2 flex items-center gap-2"><div class="font-bold text-sm text-sunny-red">${user.displayName || 'User'}</div><button onclick="logoutUser()" class="ml-auto text-xs text-slate-400 hover:text-red-500">ออกจากระบบ</button></div>
+        <button onclick="openHistoryModal()" class="w-full mb-4 py-2 bg-white border rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50">ดูประวัติที่บันทึก</button>`;
     } else {
         container.innerHTML = `
-            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-2 bg-white text-slate-600 border border-slate-200 py-3 rounded-xl text-sm font-bold hover:bg-slate-50 hover:text-sunny-red hover:border-red-100 transition-all shadow-sm mb-4 btn-bounce">เข้าสู่ระบบ Gmail</button>
-            <button onclick="openHistoryModal()" class="w-full mb-4 flex items-center justify-center gap-2 bg-slate-50 text-slate-500 border border-transparent py-2 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all shadow-sm btn-bounce">ประวัติ (Guest)</button>
+            <button onclick="loginWithGoogle()" class="w-full mb-2 py-2.5 bg-white border rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 flex items-center justify-center gap-2">เข้าสู่ระบบ Gmail</button>
+            <button onclick="openHistoryModal()" class="w-full mb-4 py-2 text-slate-400 text-xs hover:text-sunny-red">ประวัติ (Guest)</button>
         `;
     }
 }
 
+function renderNews() {
+    const container = document.getElementById('news-container');
+    const pinnedWrapper = document.getElementById('pinned-news-wrapper');
+    const scrollTrack = document.getElementById('news-ticker-track');
+    
+    if(!container || !appConfig.newsItems) return;
+
+    if(appConfig.newsItems.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+    container.classList.remove('hidden');
+    
+    const pinnedItems = appConfig.newsItems.filter(n => n.pinned);
+    const scrollItems = appConfig.newsItems.filter(n => !n.pinned);
+    
+    if(pinnedWrapper) {
+        pinnedWrapper.innerHTML = '';
+        pinnedItems.forEach(item => {
+            pinnedWrapper.innerHTML += `<div class="bg-red-50 p-2.5 border border-red-100 rounded-xl mb-2 text-sm shadow-sm flex items-start gap-2"><span class="text-lg">📌</span><div><span class="font-bold text-sunny-red">${item.badgeLabel || 'ประกาศ'}:</span> ${item.text}</div></div>`;
+        });
+    }
+    
+    const scrollWrapper = document.getElementById('scrolling-news-wrapper');
+    if(scrollWrapper && scrollTrack && scrollItems.length > 0) {
+        scrollWrapper.classList.remove('hidden');
+        let html = '';
+        [...scrollItems, ...scrollItems].forEach(item => {
+            html += `<div class="p-2 border-b border-dashed border-slate-200 text-sm text-slate-600">${item.text}</div>`;
+        });
+        scrollTrack.innerHTML = html;
+    } else if (scrollWrapper) {
+        scrollWrapper.classList.add('hidden');
+    }
+}
+
 // =========================================
-// 4. ADMIN & UTILS (Keep these for Admin Mode)
+// 4. ADMIN & UTILS (Simplified for stability)
 // =========================================
 function checkAdminLogin() { 
     if (localStorage.getItem('isAdminLoggedIn') === 'true') openConfig(); 
     else openAdminLogin();
 }
-function openAdminLogin() { 
-    document.getElementById('adminLoginModal').classList.remove('hidden'); 
-}
-function closeAdminLogin() { 
-    document.getElementById('adminLoginModal').classList.add('hidden'); 
-}
+function openAdminLogin() { document.getElementById('adminLoginModal').classList.remove('hidden'); }
+function closeAdminLogin() { document.getElementById('adminLoginModal').classList.add('hidden'); }
 function handleLogin() { 
     if(document.getElementById('adminPassword').value === 'sn1988') { 
         localStorage.setItem('isAdminLoggedIn', 'true'); 
         closeAdminLogin(); 
         showToast("เข้าสู่ระบบสำเร็จ"); 
         openConfig(); 
-        renderSidebar(); 
     } else { 
-        document.getElementById('loginError').classList.remove('hidden'); 
+        alert("รหัสผ่านไม่ถูกต้อง"); 
     } 
 }
-function logoutAdmin() { 
-    localStorage.removeItem('isAdminLoggedIn'); 
-    closeConfig(); 
-    showToast("ออกจากระบบแล้ว"); 
-    renderSidebar(); 
-}
+function logoutAdmin() { localStorage.removeItem('isAdminLoggedIn'); closeConfig(); showToast("ออกจากระบบแล้ว"); }
+
 function openConfig() {
     tempConfig = JSON.parse(JSON.stringify(appConfig));
     const modal = document.getElementById('adminConfigModal');
     if(modal) modal.classList.remove('hidden');
     
-    // Set Input Values safely
-    const titleInp = document.getElementById('conf-app-title');
-    if(titleInp) titleInp.value = tempConfig.appTitle;
+    // Bind simple inputs
+    const t = document.getElementById('conf-app-title');
+    if(t) t.value = tempConfig.appTitle || '';
     
-    const speedInp = document.getElementById('conf-news-speed');
-    if(speedInp) speedInp.value = tempConfig.newsSettings.speed || 3;
-    
-    const logoutBtn = document.getElementById('logoutBtn');
-    if(logoutBtn) logoutBtn.classList.remove('hidden');
-    
-    const calcEn = document.getElementById('conf-calc-enabled');
-    if(calcEn) calcEn.checked = tempConfig.calcSettings.enabled;
-    
-    renderAdminCalcInputs(); 
+    renderAdminCalcInputs();
     switchAdminTab('menu');
 }
+
 function saveConfig() {
-    const titleInp = document.getElementById('conf-app-title');
-    if(titleInp) tempConfig.appTitle = titleInp.value;
-    
-    const speedInp = document.getElementById('conf-news-speed');
-    if(speedInp) tempConfig.newsSettings.speed = parseInt(speedInp.value);
+    const t = document.getElementById('conf-app-title');
+    if(t) tempConfig.appTitle = t.value;
     
     appConfig = JSON.parse(JSON.stringify(tempConfig));
-    applyTheme(appConfig.theme);
     
     if(db) {
         db.collection("app_settings").doc("config").set(appConfig).then(()=>{
             showToast("บันทึกสำเร็จ");
             closeConfig();
             renderSidebar();
-            if(typeof renderNews === 'function') renderNews();
-        }).catch(err => alert("Save Error: " + err.message));
+            renderNews();
+        }).catch(e => alert("Save Error: "+e.message));
     }
 }
-function closeConfig() { 
-    if(appConfig && appConfig.theme) applyTheme(appConfig.theme); 
-    document.getElementById('adminConfigModal').classList.add('hidden'); 
-}
-function switchAdminTab(tab) {
-    ['menu','news','calc','saved', 'theme', 'features'].forEach(t => {
-        const btn = document.getElementById('tab-btn-'+t);
-        const content = document.getElementById('tab-content-'+t);
-        if(btn) btn.className = "px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1";
-        if(content) content.classList.add('hidden');
-    });
-    const activeBtn = document.getElementById('tab-btn-'+tab);
-    const activeContent = document.getElementById('tab-content-'+tab);
-    if(activeBtn) activeBtn.className = "px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap flex items-center gap-1";
-    if(activeContent) activeContent.classList.remove('hidden');
-    if(tab === 'menu') renderAdminMenu();
-    if(tab === 'news') renderAdminNews();
-    if(tab === 'saved' && typeof renderQuotationsList === 'function') renderQuotationsList('saved-quotations-list', 'all'); 
-    if(tab === 'features') renderAdminFeatures();
-}
+
+function closeConfig() { document.getElementById('adminConfigModal').classList.add('hidden'); }
+
 function renderAdminCalcInputs() {
     const container = document.getElementById('tab-content-calc');
     if(!container) return;
     
-    if(!tempConfig.calcSettings.wood) tempConfig.calcSettings.wood = {};
-    if(!tempConfig.calcSettings.pvc) tempConfig.calcSettings.pvc = {};
-    if(!tempConfig.calcSettings.roller) tempConfig.calcSettings.roller = {};
+    // Safety check objects
+    if(!tempConfig.calcSettings) tempConfig.calcSettings = { enabled: true, wood: {}, pvc: {}, roller: {} };
+    const c = tempConfig.calcSettings;
 
-    const w = tempConfig.calcSettings.wood;
-    
-    // Simple render for stability
     container.innerHTML = `
-        <div class="bg-white p-4 rounded-xl border border-slate-200 flex justify-between mb-4">
-            <span class="font-bold">เปิดระบบคำนวณ</span>
-            <input type="checkbox" ${tempConfig.calcSettings.enabled ? 'checked' : ''} onchange="tempConfig.calcSettings.enabled = this.checked">
-        </div>
-        <div class="space-y-4">
-            <div class="p-3 border rounded bg-slate-50">
-                <h4 class="font-bold mb-2">Wood Pricing</h4>
-                Basswood: <input type="number" class="border p-1 w-20" value="${w.priceBasswood}" onchange="tempConfig.calcSettings.wood.priceBasswood=parseFloat(this.value)"><br>
-                Foamwood: <input type="number" class="border p-1 w-20 mt-1" value="${w.priceFoamwood}" onchange="tempConfig.calcSettings.wood.priceFoamwood=parseFloat(this.value)">
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <span class="font-bold">เปิดใช้งานระบบคำนวณ</span>
+                <input type="checkbox" ${c.enabled?'checked':''} onchange="tempConfig.calcSettings.enabled=this.checked" class="w-6 h-6">
+            </div>
+            <div class="space-y-2">
+                <div class="font-bold text-xs text-slate-400 uppercase">Wood Pricing</div>
+                <div class="flex gap-2 items-center">Basswood: <input type="number" class="border rounded p-1 w-24" value="${c.wood?.priceBasswood || 0}" onchange="tempConfig.calcSettings.wood.priceBasswood=Number(this.value)"></div>
+                <div class="flex gap-2 items-center">Foamwood: <input type="number" class="border rounded p-1 w-24" value="${c.wood?.priceFoamwood || 0}" onchange="tempConfig.calcSettings.wood.priceFoamwood=Number(this.value)"></div>
             </div>
         </div>
     `;
 }
+
 function renderAdminMenu() {
     const list = document.getElementById('admin-menu-list');
-    if (!list) return;
+    if(!list) return;
     list.innerHTML = '';
-    tempConfig.menus.forEach((menu, idx) => {
+    tempConfig.menus.forEach((m, i) => {
         list.innerHTML += `
-            <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-slate-100 rounded text-slate-500">${ICONS[menu.icon]||'?'}</div>
-                    <div class="flex-grow space-y-1">
-                        <input type="text" value="${menu.name}" onchange="tempConfig.menus[${idx}].name=this.value" class="w-full p-1 border rounded text-sm font-bold">
-                        <input type="text" value="${menu.sub}" onchange="tempConfig.menus[${idx}].sub=this.value" class="w-full p-1 border rounded text-xs text-slate-500">
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red cursor-pointer">
-                        <span class="text-[8px] text-slate-400 mt-1">แสดง</span>
-                    </div>
-                </div>
+            <div class="p-3 border rounded-xl mb-2 flex items-center gap-3 bg-white">
+                <span class="font-bold text-slate-400">${i+1}</span>
+                <input type="text" value="${m.name}" class="border p-1 rounded text-sm flex-1" onchange="tempConfig.menus[${i}].name=this.value">
+                <input type="checkbox" ${m.active?'checked':''} class="w-5 h-5" onchange="tempConfig.menus[${i}].active=this.checked">
             </div>`;
     });
 }
+
 function renderAdminNews() {
     const list = document.getElementById('admin-news-list');
     if(!list) return;
-    list.innerHTML = '';
-    tempConfig.newsItems.forEach((item, idx) => {
-        list.innerHTML += `<div class="p-2 border mb-2"><input type="text" value="${item.text}" class="w-full border p-1" onchange="tempConfig.newsItems[${idx}].text=this.value"></div>`;
-    });
-}
-function addNewNewsItem() {
-    tempConfig.newsItems.unshift({ id: Date.now(), text: "New", date: new Date().toISOString(), pinned: false });
-    renderAdminNews();
-}
-// Render News for Users
-function renderNews() {
-    const container = document.getElementById('news-container');
-    const pinnedWrapper = document.getElementById('pinned-news-wrapper');
-    if(!container || !appConfig.newsItems) return;
+    list.innerHTML = `<button onclick="addNewNewsItem()" class="w-full py-2 border-2 border-dashed rounded-xl mb-4 text-slate-400 font-bold">+ เพิ่มประกาศ</button>`;
     
-    container.classList.remove('hidden');
-    if(pinnedWrapper) {
-        pinnedWrapper.innerHTML = '';
-        appConfig.newsItems.filter(n=>n.pinned).forEach(item => {
-            pinnedWrapper.innerHTML += `<div class="bg-red-50 p-2 border border-red-100 rounded mb-2 text-sm">📌 ${item.text}</div>`;
+    if(tempConfig.newsItems) {
+        tempConfig.newsItems.forEach((n, i) => {
+            list.innerHTML += `
+                <div class="p-3 border rounded-xl mb-2 bg-white relative">
+                    <textarea class="w-full border p-2 rounded text-sm mb-2" onchange="tempConfig.newsItems[${i}].text=this.value">${n.text}</textarea>
+                    <div class="flex justify-between items-center">
+                        <label class="flex items-center gap-2 text-xs"><input type="checkbox" ${n.pinned?'checked':''} onchange="tempConfig.newsItems[${i}].pinned=this.checked"> ปักหมุด</label>
+                        <button onclick="deleteNews(${i})" class="text-red-500 text-xs font-bold">ลบ</button>
+                    </div>
+                </div>`;
         });
     }
 }
 
-// PWA & THEME
-function checkPwaStatus() { 
-    const sidebarBtn = document.getElementById('pwaInstallBtn'); 
-    if(window.matchMedia('(display-mode: standalone)').matches) { 
-        if(sidebarBtn) sidebarBtn.classList.add('hidden'); 
-    } else {
-        if(sidebarBtn) sidebarBtn.classList.remove('hidden'); 
+function addNewNewsItem() {
+    if(!tempConfig.newsItems) tempConfig.newsItems = [];
+    tempConfig.newsItems.unshift({ id: Date.now(), text: "ประกาศใหม่", pinned: false, date: new Date().toISOString() });
+    renderAdminNews();
+}
+
+function deleteNews(i) {
+    if(confirm('ลบ?')) {
+        tempConfig.newsItems.splice(i, 1);
+        renderAdminNews();
     }
 }
-function applyTheme(theme) {
-    document.body.classList.remove('theme-christmas');
-    if (theme === 'christmas') document.body.classList.add('theme-christmas');
+
+function switchAdminTab(tab) {
+    ['menu','news','calc'].forEach(t => document.getElementById('tab-content-'+t).classList.add('hidden'));
+    ['saved','theme','features'].forEach(t => { const el = document.getElementById('tab-content-'+t); if(el) el.classList.add('hidden'); });
+    
+    const target = document.getElementById('tab-content-'+tab);
+    if(target) target.classList.remove('hidden');
+    
+    if(tab==='menu') renderAdminMenu();
+    if(tab==='news') renderAdminNews();
+    if(tab==='calc') renderAdminCalcInputs();
 }
-function setupAutocomplete() {} // Placeholder
-function switchSystem() {} // Placeholder
-function insertEmoji() {}
-function togglePinNews() {}
-function deleteNews() {}
-function renderAdminFeatures() {}
-function addNewFeature() {}
-function previewTheme() {}
-function toggleSidebar() { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); sb.classList.toggle('-translate-x-full'); ov.classList.toggle('hidden'); }
-function toggleHelpModal() {}
-function toggleCodeListModal() {}
+
+// --- PWA ---
+function checkPwaStatus() {
+    const btn = document.getElementById('headerInstallBtn');
+    if(btn && !window.matchMedia('(display-mode: standalone)').matches) btn.classList.remove('hidden');
+}
+function installApp() { if(deferredPrompt) deferredPrompt.prompt(); }
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; checkPwaStatus(); });
+
+// --- SHARED AUTH ---
+function loginWithGoogle() {
+    if (!auth) return;
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).then((result) => {
+        showToast("Login Success");
+        renderUserSidebar(result.user);
+    }).catch(e => alert(e.message));
+}
+function logoutUser() {
+    auth.signOut().then(() => { showToast("Logged Out"); renderUserSidebar(null); });
+}
+function shareCurrentPage() {
+    const url = window.location.origin + window.location.pathname + '?mode=' + calcMode;
+    navigator.clipboard.writeText(url).then(() => showToast("Link Copied!"));
+}
+function setupAutocomplete() {} // Fallback
+function insertEmoji() {} // Fallback
+function toggleSidebar() { const s=document.getElementById('sidebar'); if(s) s.classList.toggle('-translate-x-full'); const o=document.getElementById('sidebarOverlay'); if(o) o.classList.toggle('hidden'); }
