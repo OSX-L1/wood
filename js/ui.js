@@ -65,12 +65,14 @@ function checkUrlParams() {
     if (sharedMode) {
         console.log("Deep Link Detected:", sharedMode);
         
-        // 1. ซ่อนส่วนที่ไม่เกี่ยวข้องทันที
+        // 1. ซ่อนส่วนที่ไม่เกี่ยวข้องทันที (ค้นหา, ข่าว, Header)
         const searchSection = document.getElementById('searchSection');
         const newsContainer = document.getElementById('news-container');
+        // const headerSection = document.getElementById('headerSection'); // ถ้าอยากซ่อน Header ด้วยให้เปิดบรรทัดนี้
         
         if(searchSection) searchSection.classList.add('hidden');
         if(newsContainer) newsContainer.classList.add('hidden');
+        // if(headerSection) headerSection.classList.add('hidden');
 
         // 2. เรียกเปิดเครื่องคิดเลข (หน่วงเวลานิดหน่อยเพื่อให้ calc.js โหลดเสร็จ)
         setTimeout(() => {
@@ -83,7 +85,7 @@ function checkUrlParams() {
                     calcSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
-        }, 300);
+        }, 500);
     }
 }
 
@@ -434,27 +436,22 @@ const blob = new Blob([stringManifest], {type: 'application/json'});
 const manifestURL = URL.createObjectURL(blob);
 document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
 
-// --- APP INIT (FIXED) ---
+// --- APP INIT (CORRECTED LOGIC) ---
 window.addEventListener('DOMContentLoaded', () => { 
-    // 1. Init Firebase
     initFirebase();
-    
-    // 2. Render UI
     renderSidebar();
-    
-    // 3. Setup Logic
     setupAutocomplete();
     checkPwaStatus();
     
-    // 4. CHECK URL (IMPORTANT)
+    // IMPORTANT: Check URL params first!
     const params = new URLSearchParams(window.location.search);
     const sharedMode = params.get('mode');
 
     if (sharedMode) {
-        // CASE: DEEP LINK (ข้ามหน้าค้นหา ไปหน้าคำนวณเลย)
+        // CASE 1: Deep Link -> Load Calculator Only, Do NOT load Stock Search
         checkUrlParams(); 
     } else {
-        // CASE: NORMAL ENTRY (ไปหน้าค้นหาตามปกติ)
+        // CASE 2: Normal Entry -> Load Stock Search (Default)
         setTimeout(() => {
             if(typeof switchSystem === 'function') switchSystem('WOOD');
             if(typeof renderNews === 'function') renderNews();
@@ -468,3 +465,162 @@ window.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => s.remove(), 700);
     }
 });
+
+// --- ADMIN FUNCTIONS (Re-inserted for safety) ---
+function checkAdminLogin() { 
+    if (localStorage.getItem('isAdminLoggedIn') === 'true') {
+        openConfig(); 
+    } else {
+        openAdminLogin();
+    }
+}
+
+function openAdminLogin() { 
+    document.getElementById('adminLoginModal').classList.remove('hidden'); 
+    document.getElementById('adminPassword').value=''; 
+    document.getElementById('loginError').classList.add('hidden'); 
+    document.getElementById('adminPassword').focus(); 
+}
+
+function closeAdminLogin() { 
+    document.getElementById('adminLoginModal').classList.add('hidden'); 
+}
+
+function handleLogin() { 
+    if(document.getElementById('adminPassword').value === 'sn1988') { 
+        localStorage.setItem('isAdminLoggedIn', 'true'); 
+        closeAdminLogin(); 
+        showToast("เข้าสู่ระบบสำเร็จ"); 
+        openConfig(); 
+        renderSidebar(); 
+    } else { 
+        document.getElementById('loginError').classList.remove('hidden'); 
+    } 
+}
+
+function logoutAdmin() { 
+    localStorage.removeItem('isAdminLoggedIn'); 
+    closeConfig(); 
+    showToast("ออกจากระบบแล้ว"); 
+    renderSidebar(); 
+}
+
+function openConfig() {
+    tempConfig = JSON.parse(JSON.stringify(appConfig));
+    const modal = document.getElementById('adminConfigModal');
+    if(modal) modal.classList.remove('hidden');
+    
+    const titleInp = document.getElementById('conf-app-title');
+    if(titleInp) titleInp.value = tempConfig.appTitle;
+    
+    const speedInp = document.getElementById('conf-news-speed');
+    if(speedInp) speedInp.value = tempConfig.newsSettings.speed || 3;
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if(logoutBtn) logoutBtn.classList.remove('hidden');
+    
+    const calcEn = document.getElementById('conf-calc-enabled');
+    if(calcEn) calcEn.checked = tempConfig.calcSettings.enabled;
+    
+    renderAdminCalcInputs(); 
+
+    const theme = tempConfig.theme || 'default';
+    const radios = document.getElementsByName('app-theme');
+    for(const r of radios) { r.checked = (r.value === theme); }
+    
+    const st = document.getElementById('admin-mode-status');
+    if(st) {
+        const isConnected = auth && auth.currentUser;
+        st.innerText = isConnected ? "สถานะ: Online Mode" : "สถานะ: Offline Mode";
+        st.className = isConnected ? "text-xs font-bold text-green-600" : "text-xs font-bold text-red-600";
+    }
+    switchAdminTab('menu');
+}
+
+function renderAdminCalcInputs() {
+    const container = document.getElementById('tab-content-calc');
+    if(!container) return;
+    
+    const w = tempConfig.calcSettings.wood;
+    const p = tempConfig.calcSettings.pvc;
+    const r = tempConfig.calcSettings.roller; 
+
+    container.innerHTML = `
+        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between mb-4 sticky top-0 z-10 shadow-sm">
+            <span class="font-bold text-slate-700">เปิดใช้งานระบบคำนวณ</span>
+            <input type="checkbox" id="conf-calc-enabled" ${tempConfig.calcSettings.enabled ? 'checked' : ''} class="w-6 h-6 accent-sunny-red" onchange="tempConfig.calcSettings.enabled = this.checked">
+        </div>
+
+        <div class="space-y-6 pb-10">
+            <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                <h3 class="font-bold text-amber-800 border-b border-amber-200 pb-2 mb-3 flex items-center gap-2">🪵 มู่ลี่ไม้ (Wood)</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-bold text-slate-500">ราคา Basswood (บาท)</label><input type="number" value="${w.priceBasswood}" onchange="tempConfig.calcSettings.wood.priceBasswood = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">ราคา Foamwood (บาท)</label><input type="number" value="${w.priceFoamwood}" onchange="tempConfig.calcSettings.wood.priceFoamwood = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">ตัวคูณ (เช่น 1.2)</label><input type="number" step="0.01" value="${w.factor}" onchange="tempConfig.calcSettings.wood.factor = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">กว้างสูงสุด (Max W)</label><input type="number" step="0.01" value="${w.maxW}" onchange="tempConfig.calcSettings.wood.maxW = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">กว้างขั้นต่ำ (Min W)</label><input type="number" step="0.01" value="${w.minW}" onchange="tempConfig.calcSettings.wood.minW = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">สูงขั้นต่ำ (Min H)</label><input type="number" step="0.01" value="${w.minH}" onchange="tempConfig.calcSettings.wood.minH = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                <h3 class="font-bold text-blue-800 border-b border-blue-200 pb-2 mb-3 flex items-center gap-2">🚪 ฉากกั้นห้อง (PVC)</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-bold text-slate-500">ตัวคูณ (เช่น 1.2)</label><input type="number" step="0.01" value="${p.factor}" onchange="tempConfig.calcSettings.pvc.factor = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">กว้างขั้นต่ำ (Min W)</label><input type="number" step="0.01" value="${p.minW}" onchange="tempConfig.calcSettings.pvc.minW = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">เริ่มปัดเศษความสูง (เมตร)</label><input type="number" step="0.01" value="${p.stepStartH}" onchange="tempConfig.calcSettings.pvc.stepStartH = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-white"></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <h3 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-3 flex items-center gap-2">🪟 ม่านม้วน (Roller Blinds)</h3>
+                <div class="grid grid-cols-2 gap-4 mt-2">
+                    <div><label class="text-[10px] font-bold text-slate-500">ตัวคูณผ้า (Fabric Mult)</label><input type="number" step="0.1" value="${r.fabricMult}" onchange="tempConfig.calcSettings.roller.fabricMult = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">พื้นที่ขั้นต่ำ (Min Area)</label><input type="number" step="0.1" value="${r.minArea}" onchange="tempConfig.calcSettings.roller.minArea = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">ค่าอุปกรณ์ (Eq Ext)</label><input type="number" value="${r.eqExt}" onchange="tempConfig.calcSettings.roller.eqExt = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">สลิง (Sling)</label><input type="number" value="${r.sling}" onchange="tempConfig.calcSettings.roller.sling = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">รางบน (Rail Top)</label><input type="number" value="${r.railTop}" onchange="tempConfig.calcSettings.roller.railTop = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">รางล่าง (Rail Bot)</label><input type="number" value="${r.railBot}" onchange="tempConfig.calcSettings.roller.railBot = parseFloat(this.value)" class="w-full p-2 border rounded text-sm bg-slate-50"></div>
+                </div>
+            </div>
+             <div class="text-[10px] text-slate-400 text-center pt-2">* มู่ลี่อลูมิเนียม ใช้ตารางราคาแยก</div>
+        </div>
+    `;
+}
+
+function closeConfig() { 
+    applyTheme(appConfig.theme); 
+    document.getElementById('adminConfigModal').classList.add('hidden'); 
+}
+
+function saveConfig() {
+    tempConfig.appTitle = document.getElementById('conf-app-title').value;
+    tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value);
+    
+    appConfig = tempConfig;
+    applyTheme(appConfig.theme);
+    
+    db.collection("app_settings").doc("config").set(appConfig).then(()=>{
+        showToast("บันทึกสำเร็จ");
+        closeConfig();
+        renderSidebar();
+    });
+}
+
+function switchAdminTab(tab) {
+    ['menu','news','calc','saved', 'theme', 'features'].forEach(t => {
+        const btn = document.getElementById('tab-btn-'+t);
+        const content = document.getElementById('tab-content-'+t);
+        if(btn) btn.className = "px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1";
+        if(content) content.classList.add('hidden');
+    });
+    const activeBtn = document.getElementById('tab-btn-'+tab);
+    const activeContent = document.getElementById('tab-content-'+tab);
+    if(activeBtn) activeBtn.className = "px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap flex items-center gap-1";
+    if(activeContent) activeContent.classList.remove('hidden');
+    if(tab === 'menu') renderAdminMenu();
+    if(tab === 'news') renderAdminNews();
+    if(tab === 'saved') renderQuotationsList('saved-quotations-list', 'all'); 
+    if(tab === 'features') renderAdminFeatures();
+}
