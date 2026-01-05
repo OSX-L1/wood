@@ -55,27 +55,33 @@ function shareCurrentPage() {
     });
 }
 
-// --- URL PARSER (Deep Link Logic) ---
+// --- URL PARSER (Deep Link Logic - FIXED) ---
 function checkUrlParams() {
     const params = new URLSearchParams(window.location.search);
     const sharedMode = params.get('mode');
     
     if (sharedMode) {
-        console.log("Deep Link Detected:", sharedMode);
+        console.log("🚀 Deep Link Activated:", sharedMode);
+        
+        // 1. บังคับซ่อนส่วนอื่นๆ ทันทีเพื่อไม่ให้เห็นแวบๆ
         const searchSection = document.getElementById('searchSection');
         const newsContainer = document.getElementById('news-container');
         if(searchSection) searchSection.classList.add('hidden');
         if(newsContainer) newsContainer.classList.add('hidden');
 
+        // 2. เปิดหน้าคำนวณ (Delay เล็กน้อยเพื่อให้ DOM พร้อม)
         setTimeout(() => {
             if(typeof switchCalcMode === 'function') {
                 switchCalcMode(sharedMode);
+                
+                // เลื่อนหน้าจอลงมา
                 const calcSec = document.getElementById('calculatorSection');
                 if(calcSec) {
+                    calcSec.classList.remove('hidden'); // บังคับโชว์
                     calcSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
-        }, 500);
+        }, 300);
     }
 }
 
@@ -119,7 +125,6 @@ function renderSidebar() {
     const container = document.getElementById('sidebar-menu-container');
     if (!container) return;
     
-    // PART 1: Stock Menu
     let html = `<div class="px-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">เช็คสต็อกสินค้า</div>`;
     
     appConfig.menus.forEach(menu => {
@@ -135,14 +140,12 @@ function renderSidebar() {
             </a>`;
     });
 
-    // PART 2: Calculator Menu
     const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
     if (appConfig.calcSettings.enabled || isAdmin) {
         html += `<div class="px-6 mt-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between"><span>ระบบคำนวณราคา</span>${!appConfig.calcSettings.enabled ? '<span class="text-[9px] bg-red-100 text-red-500 px-1 rounded">Admin Only</span>' : ''}</div>`;
         
         const calcClass = "group flex items-center px-6 py-3 text-slate-600 hover:bg-indigo-50 hover:text-indigo-900 transition-all duration-200 ease-out border-l-4 border-transparent hover:border-indigo-900";
         
-        // Define Icons
         const iconRollerExt = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>`;
         const iconRollerInt = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>`;
         const iconPVC = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>`;
@@ -182,14 +185,42 @@ function renderSidebar() {
     checkPwaStatus();
 }
 
-// --- ADMIN MENU RENDERING (FIXED: Added Checkbox) ---
+// --- ADMIN MENU & UTILS ---
+window.addMenuImage = (menuIdx, slotKey) => {
+    let current = tempConfig.menus[menuIdx][slotKey] || '';
+    let arr = current.split(',').map(s => s.trim());
+    if (arr.length === 1 && arr[0] === '') arr = [];
+    arr.push(''); 
+    if(arr.length === 1 && arr[0] === '') tempConfig.menus[menuIdx][slotKey] = ' '; 
+    else tempConfig.menus[menuIdx][slotKey] = arr.join(',');
+    renderAdminMenu();
+};
+
+window.updateMenuImage = (menuIdx, slotKey, imgIdx, newValue) => {
+    let current = tempConfig.menus[menuIdx][slotKey] || '';
+    let arr = current.split(','); 
+    arr = arr.map(s => s.trim());
+    if (arr.length === 1 && arr[0] === '') arr = [];
+    while(arr.length <= imgIdx) arr.push('');
+    arr[imgIdx] = newValue.trim();
+    tempConfig.menus[menuIdx][slotKey] = arr.join(',');
+};
+
+window.removeMenuImage = (menuIdx, slotKey, imgIdx) => {
+    let current = tempConfig.menus[menuIdx][slotKey] || '';
+    let arr = current.split(',').map(s => s.trim());
+    if (arr.length === 1 && arr[0] === '') arr = [];
+    arr.splice(imgIdx, 1);
+    tempConfig.menus[menuIdx][slotKey] = arr.join(',');
+    renderAdminMenu();
+};
+
 function renderAdminMenu() {
     const list = document.getElementById('admin-menu-list');
     if (!list) return;
     list.innerHTML = '';
     
     tempConfig.menus.forEach((menu, idx) => {
-        // ... (Image Slots Logic) ...
         const slots = [
             { key: 'bgImage1', label: 'ช่องซ้าย (Left)' },
             { key: 'bgImage2', label: 'ช่องกลาง (Center)' },
@@ -229,9 +260,6 @@ function renderAdminMenu() {
             `;
         });
 
-        // ----------------------------------------------------
-        // THIS IS THE FIXED PART: CHECKBOX IS BACK
-        // ----------------------------------------------------
         list.innerHTML += `
             <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-3">
                 <div class="flex items-center gap-3">
@@ -255,36 +283,6 @@ function renderAdminMenu() {
             </div>`;
     });
 }
-
-// Helpers attached to window for inline onclicks in Admin Menu
-window.addMenuImage = (menuIdx, slotKey) => {
-    let current = tempConfig.menus[menuIdx][slotKey] || '';
-    let arr = current.split(',').map(s => s.trim());
-    if (arr.length === 1 && arr[0] === '') arr = [];
-    arr.push(''); 
-    if(arr.length === 1 && arr[0] === '') tempConfig.menus[menuIdx][slotKey] = ' '; 
-    else tempConfig.menus[menuIdx][slotKey] = arr.join(',');
-    renderAdminMenu();
-};
-
-window.updateMenuImage = (menuIdx, slotKey, imgIdx, newValue) => {
-    let current = tempConfig.menus[menuIdx][slotKey] || '';
-    let arr = current.split(','); 
-    arr = arr.map(s => s.trim());
-    if (arr.length === 1 && arr[0] === '') arr = [];
-    while(arr.length <= imgIdx) arr.push('');
-    arr[imgIdx] = newValue.trim();
-    tempConfig.menus[menuIdx][slotKey] = arr.join(',');
-};
-
-window.removeMenuImage = (menuIdx, slotKey, imgIdx) => {
-    let current = tempConfig.menus[menuIdx][slotKey] || '';
-    let arr = current.split(',').map(s => s.trim());
-    if (arr.length === 1 && arr[0] === '') arr = [];
-    arr.splice(imgIdx, 1);
-    tempConfig.menus[menuIdx][slotKey] = arr.join(',');
-    renderAdminMenu();
-};
 
 function renderAdminNews() {
     const list = document.getElementById('admin-news-list'); 
@@ -501,7 +499,7 @@ const blob = new Blob([stringManifest], {type: 'application/json'});
 const manifestURL = URL.createObjectURL(blob);
 document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
 
-// --- APP INIT (Admin Logic Fixed) ---
+// --- APP INIT (ADMIN & ADMIN MENU & DEEP LINK FIXED) ---
 function checkAdminLogin() { 
     if (localStorage.getItem('isAdminLoggedIn') === 'true') {
         openConfig(); 
