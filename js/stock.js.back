@@ -8,7 +8,7 @@ const ALU_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBm
 const ALU25_STD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=684509454&single=true&output=csv";
 const ALU25_CHAIN_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz2OtjzRBmeUmLOTSgJ-Bt2woZPiR9QyzvIWcBXacheG3IplefFZE66yWYE43qVRQo2DAOPu9UClh5/pub?gid=374964719&single=true&output=csv";
 
-// --- DEFAULT BACKGROUND IMAGES (ภาพสำรอง) ---
+// --- DEFAULT BACKGROUND IMAGES (ภาพสำรอง: แสดงเมื่อยังโหลดภาพจาก Admin ไม่เสร็จ) ---
 const DEFAULT_BGS = {
     WOOD: [
         'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
@@ -266,7 +266,7 @@ function switchSystem(system) {
     let hasImages = false;
     const slotImages = [[], [], []];
 
-    // Priority 1: User Config
+    // Priority 1: User Config from Admin
     if (menu.bgImage1 || menu.bgImage2 || menu.bgImage3) {
         hasImages = true;
         if(menu.bgImage1) slotImages[0] = menu.bgImage1.split(',').map(url => url.trim()).filter(url => url !== '');
@@ -296,9 +296,12 @@ function switchSystem(system) {
         headerContent.classList.add('header-content-glass');
         header.style.backgroundImage = '';
         
-        // Create Bento Grid Container with FORCED STYLES (แก้บั๊ก CSS ไม่โหลด)
+        // Create Bento Grid Container
         const gridContainer = document.createElement('div');
         gridContainer.className = 'bento-grid-bg grid grid-cols-3 gap-0.5 bg-white/20';
+        
+        // *** FIX: FORCE STYLES INLINE ***
+        // ป้องกันปัญหากรณี CSS โหลดไม่ติด หรือชื่อคลาสไม่ตรง
         gridContainer.style.position = 'absolute';
         gridContainer.style.inset = '0';
         gridContainer.style.width = '100%';
@@ -318,17 +321,13 @@ function switchSystem(system) {
                     slide.className = `bg-slide-item ${imgIdx === 0 ? 'active' : ''}`;
                     slide.style.backgroundImage = `url('${url}')`;
                     
-                    // --- ANIMATION & STYLES (Smooth Crossfade & Zoom) ---
+                    // FIX: Force Slide Styles
+                    slide.style.backgroundSize = 'cover';
+                    slide.style.backgroundPosition = 'center';
                     slide.style.position = 'absolute';
                     slide.style.inset = '0';
                     slide.style.width = '100%';
                     slide.style.height = '100%';
-                    slide.style.backgroundSize = 'cover';
-                    slide.style.backgroundPosition = 'center';
-                    slide.style.transition = 'opacity 3s ease-in-out, transform 8s linear'; // Smooth Transition
-                    slide.style.opacity = imgIdx === 0 ? '1' : '0';
-                    slide.style.transform = imgIdx === 0 ? 'scale(1.1)' : 'scale(1)';
-                    slide.style.zIndex = imgIdx === 0 ? '1' : '0';
                     
                     colDiv.appendChild(slide);
                 });
@@ -339,20 +338,16 @@ function switchSystem(system) {
                         const interval = setInterval(() => {
                             const slides = colDiv.querySelectorAll('.bg-slide-item');
                             if(slides.length === 0) return;
-                            
-                            // Old Slide Fades Out
+                            slides[cur].classList.remove('active');
+                            // Fallback for missing CSS transition
                             slides[cur].style.opacity = '0'; 
-                            slides[cur].style.transform = 'scale(1)';
-                            slides[cur].style.zIndex = '0';
                             
                             cur = (cur + 1) % slides.length;
-                            
-                            // New Slide Fades In
+                            slides[cur].classList.add('active');
+                            // Fallback for missing CSS transition
                             slides[cur].style.opacity = '1';
-                            slides[cur].style.transform = 'scale(1.1)'; // Start Zoom
-                            slides[cur].style.zIndex = '1';
                             
-                        }, 6000 + (colIndex * 1500)); 
+                        }, 5000 + (colIndex * 1500)); 
                         slideshowIntervals.push(interval);
                     }, colIndex * 800);
                 }
@@ -364,6 +359,7 @@ function switchSystem(system) {
         header.insertBefore(gridContainer, header.firstChild);
 
     } else {
+        // Fallback to Wooden Pattern if no images found
         header.style.backgroundImage = '';
         header.classList.remove('header-custom-bg');
         header.classList.add('wooden-pattern');
