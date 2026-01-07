@@ -1342,3 +1342,94 @@ window.addEventListener('DOMContentLoaded', () => {
 
 });
 
+
+
+
+// ====================== RESTORED ADMIN MENU & NEWS ======================
+// (Auto-injected – no original code removed)
+
+// ---------------------- ADMIN: MENU MANAGEMENT ----------------------
+function renderAdminMenu() {
+    const container = document.getElementById('tab-content-menu');
+    if (!container) return;
+
+    tempConfig.menus = tempConfig.menus || (appConfig.menus ? JSON.parse(JSON.stringify(appConfig.menus)) : []);
+
+    const rows = tempConfig.menus.map((m, idx) => {
+        const idSafe = m.id || `menu_${idx}`;
+        return `
+            <div class="mb-3 p-3 bg-white rounded-xl border border-slate-100 flex gap-3 items-start">
+                <div class="w-16 text-[11px] text-slate-500">ID<br>
+                    <input class="mt-1 w-full p-1 border rounded text-sm" value="${idSafe}"
+                        onchange="tempConfig.menus[${idx}].id = this.value">
+                </div>
+                <div class="flex-1">
+                    <label class="text-xs font-bold text-slate-500">ชื่อเมนู</label>
+                    <input class="w-full p-2 border rounded mt-1 text-sm" value="${m.name||''}"
+                        onchange="tempConfig.menus[${idx}].name = this.value">
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <input class="w-full p-1 border rounded text-sm" placeholder="icon"
+                            value="${m.icon||''}" onchange="tempConfig.menus[${idx}].icon = this.value">
+                        <input class="w-full p-1 border rounded text-sm" placeholder="sub"
+                            value="${m.sub||''}" onchange="tempConfig.menus[${idx}].sub = this.value">
+                    </div>
+                </div>
+                <div class="w-24 text-center">
+                    <input type="checkbox" ${m.active?'checked':''}
+                        onchange="tempConfig.menus[${idx}].active = this.checked">
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex justify-between">
+                <h3 class="font-bold">จัดการเมนู</h3>
+                <button onclick="saveAdminMenus()" class="px-3 py-2 bg-sunny-red text-white rounded">
+                    บันทึก
+                </button>
+            </div>
+            ${rows || '<div class="text-slate-400">ไม่มีเมนู</div>'}
+        </div>
+    `;
+}
+
+function saveAdminMenus() {
+    appConfig.menus = tempConfig.menus;
+    db.collection("app_settings").doc("config").set(appConfig);
+}
+
+// ---------------------- ADMIN: NEWS MANAGEMENT ----------------------
+function renderAdminNews() {
+    const container = document.getElementById('tab-content-news');
+    if (!container) return;
+
+    tempConfig.newsItems = tempConfig.newsItems || (appConfig.newsItems ? JSON.parse(JSON.stringify(appConfig.newsItems)) : []);
+
+    const rows = tempConfig.newsItems.map((n, idx) => `
+        <div class="mb-3 p-3 bg-white rounded-xl border">
+            <textarea class="w-full border p-2 text-sm"
+                onchange="tempConfig.newsItems[${idx}].text = this.value">${n.text||''}</textarea>
+        </div>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex justify-between">
+                <h3 class="font-bold">ข่าวสาร / ประกาศ</h3>
+                <button onclick="saveAdminNews()" class="px-3 py-2 bg-sunny-red text-white rounded">
+                    บันทึก
+                </button>
+            </div>
+            ${rows || '<div class="text-slate-400">ไม่มีข่าว</div>'}
+        </div>
+    `;
+}
+
+function saveAdminNews() {
+    appConfig.newsItems = tempConfig.newsItems;
+    db.collection("app_settings").doc("config").set(appConfig);
+}
+
+// ====================== END RESTORE BLOCK ======================
