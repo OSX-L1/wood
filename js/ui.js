@@ -17,10 +17,6 @@ const EMOJI_LIST = [
 // --- GLOBAL USER PROFILE VAR ---
 
 let currentUserProfile = null;
-// --- [เพิ่มส่วนที่ 1] ตัวแปรสำหรับ Admin และ PWA ---
-let tempQuotes = []; 
-let tempConfig = {}; 
-let deferredPrompt;
 
 
 
@@ -612,106 +608,7 @@ function renderNews() {
 
 }
 
-// --- [เพิ่มส่วนที่ 2] ฟังก์ชัน Admin ที่ขาดหายไป ---
 
-function renderAdminMenu() {
-    const list = document.getElementById('admin-menu-list');
-    if (!list) return;
-    list.innerHTML = '';
-    if(!tempConfig.menus || !Array.isArray(tempConfig.menus)) tempConfig.menus = [];
-
-    tempConfig.menus.forEach((menu, idx) => {
-        // ใช้ ? แทนไอคอนถ้าหาตัวแปร ICONS ไม่เจอ
-        const iconDisplay = (typeof ICONS !== 'undefined' && ICONS[menu.icon]) ? ICONS[menu.icon] : '?';
-        list.innerHTML += `
-            <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-3 mb-2">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-slate-100 rounded text-slate-500 w-8 h-8 flex justify-center items-center">${iconDisplay}</div>
-                    <div class="flex-grow space-y-1">
-                        <input type="text" value="${menu.name}" onchange="tempConfig.menus[${idx}].name=this.value" class="w-full p-1 border rounded text-sm font-bold">
-                        <input type="text" value="${menu.sub}" onchange="tempConfig.menus[${idx}].sub=this.value" class="w-full p-1 border rounded text-xs text-slate-500">
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <input type="checkbox" ${menu.active?'checked':''} onchange="tempConfig.menus[${idx}].active=this.checked" class="w-5 h-5 accent-sunny-red cursor-pointer">
-                    </div>
-                </div>
-            </div>`;
-    });
-}
-
-// Helper functions สำหรับ Menu ที่ต้องประกาศแบบ Global window
-window.addMenuImage = (menuIdx, slotKey) => { renderAdminMenu(); }; // Placeholder
-window.updateMenuImage = (menuIdx, slotKey, imgIdx, newValue) => { 
-    if(!tempConfig.menus[menuIdx]) return;
-    let current = tempConfig.menus[menuIdx][slotKey] || '';
-    // Logic update อย่างง่าย
-    tempConfig.menus[menuIdx][slotKey] = newValue;
-};
-window.removeMenuImage = (menuIdx, slotKey, imgIdx) => { renderAdminMenu(); };
-
-function renderAdminNews() {
-    const list = document.getElementById('admin-news-list'); 
-    if(!list) return;
-    list.innerHTML = '';
-    if(!tempConfig.newsItems || !Array.isArray(tempConfig.newsItems)) tempConfig.newsItems = [];
-
-    const sorted = [...tempConfig.newsItems].sort((a,b) => (b.pinned===a.pinned)? 0 : b.pinned? 1 : -1);
-    sorted.forEach((item, idx) => {
-        const realIdx = tempConfig.newsItems.findIndex(x => x.id === item.id);
-        list.innerHTML += `
-            <div class="p-4 rounded-xl border ${item.pinned ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} mb-4">
-                <div class="flex justify-between gap-3 mb-2">
-                    <div class="flex-1">
-                        <label class="text-[10px] text-slate-400 font-bold">ข้อความ</label>
-                        <div contenteditable="true" class="w-full p-2 text-sm border rounded bg-white" oninput="tempConfig.newsItems[${realIdx}].text = this.innerHTML">${item.text}</div>
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <button onclick="togglePinNews(${realIdx})" class="${item.pinned?'text-white bg-sunny-red':'text-slate-400 bg-white border'} p-2 rounded-lg">📌</button>
-                        <button onclick="deleteNews(${realIdx})" class="text-slate-400 hover:text-red-500 bg-white border p-2 rounded-lg">🗑️</button>
-                    </div>
-                </div>
-            </div>`;
-    });
-}
-
-function togglePinNews(idx) { if(tempConfig.newsItems[idx]) { tempConfig.newsItems[idx].pinned = !tempConfig.newsItems[idx].pinned; renderAdminNews(); } }
-function deleteNews(idx) { if(confirm('ลบ?')) { tempConfig.newsItems.splice(idx, 1); renderAdminNews(); } }
-function addNewNewsItem() { 
-    if(!tempConfig.newsItems) tempConfig.newsItems = [];
-    tempConfig.newsItems.unshift({ id: Date.now(), text: "ประกาศใหม่...", date: new Date().toISOString(), pinned: false, badgeLabel: "NEW!", badgeColor: "#E63946", badgeTextColor: "#FFFFFF", textColor: "#334155" }); 
-    renderAdminNews(); 
-}
-
-function renderAdminCalcInputs() { 
-    const container = document.getElementById('tab-content-calc'); 
-    if(!container) return; 
-    container.innerHTML = '<div class="p-4 text-center text-slate-400">Settings Logic Placeholder (Function Restored)</div>'; 
-}
-
-async function renderAdminDashboard() {
-    const container = document.getElementById('tab-content-dashboard');
-    if(!container) return;
-    
-    let totalValue = 0;
-    let count = 0;
-    try {
-        if(typeof db !== 'undefined') {
-            // โหลดข้อมูลจริงถ้าต่อ Firebase ได้
-            const snap = await db.collection("quotations").get();
-            count = snap.size;
-            snap.forEach(doc => { 
-                const d = doc.data(); 
-                totalValue += parseFloat((d.total || "0").replace(/,/g, '')) || 0; 
-            });
-        }
-    } catch(e) { console.log("Offline or Error loading dashboard"); }
-
-    container.innerHTML = `
-        <div class="grid grid-cols-2 gap-4">
-            <div class="bg-red-50 p-4 rounded-xl"><div class="text-xs text-slate-500">ยอดรวม</div><div class="text-xl font-bold">${totalValue.toLocaleString()}</div></div>
-            <div class="bg-slate-50 p-4 rounded-xl"><div class="text-xs text-slate-500">จำนวนใบ</div><div class="text-xl font-bold">${count}</div></div>
-        </div>`;
-}
 
 function checkAdminLogin() { if (localStorage.getItem('isAdminLoggedIn') === 'true') { openConfig(); } else { openAdminLogin(); } }
 
