@@ -1126,4 +1126,219 @@ function checkPwaStatus() {
 
                 title.innerText = "ติดตั้งบน iOS (iPhone/iPad)";
 
-                instructions.innerHTML = `<div class="flex flex-col gap-4 items-center text-center"><p class="text-sunny-red font-bold">iOS ไม่รองรับการติดตั้งอัตโนมัติ</p><p>กรุณาทำตามขั้นตอน:</p><div class="flex items-center gap-3 text-left bg-slate-50 p-3 rounded-xl w-full border border-slate-100"><span class="text-2xl">1️⃣</span><span class="text-sm">แตะปุ่ม <strong>แชร์ (Share)</strong> <br><span class="text-xs text-slate-400">ไอคอนสี่เหลี่ยมมีลูกศรชี้ขึ้น</span></span></div><div class="flex items-center gap-3 text-left bg-slate-50 p-3 rounded-xl w-full border border-slate-100"><span class="text-2xl">2️⃣</span><span class="text-sm">เลือก <strong>"เพิ่มไปยังหน้าจอโฮม"</strong> <br><span class="text-xs text-slate-400">(Add to Home Screen)</span></span></div><div class="text-xs text-slate-400
+                instructions.innerHTML = `<div class="flex flex-col gap-4 items-center text-center"><p class="text-sunny-red font-bold">iOS ไม่รองรับการติดตั้งอัตโนมัติ</p><p>กรุณาทำตามขั้นตอน:</p><div class="flex items-center gap-3 text-left bg-slate-50 p-3 rounded-xl w-full border border-slate-100"><span class="text-2xl">1️⃣</span><span class="text-sm">แตะปุ่ม <strong>แชร์ (Share)</strong> <br><span class="text-xs text-slate-400">ไอคอนสี่เหลี่ยมมีลูกศรชี้ขึ้น</span></span></div><div class="flex items-center gap-3 text-left bg-slate-50 p-3 rounded-xl w-full border border-slate-100"><span class="text-2xl">2️⃣</span><span class="text-sm">เลือก <strong>"เพิ่มไปยังหน้าจอโฮม"</strong> <br><span class="text-xs text-slate-400">(Add to Home Screen)</span></span></div><div class="text-xs text-slate-400 mt-2">กด "เพิ่ม" ที่มุมขวาบน</div></div>`;
+
+                modal.classList.remove('hidden');
+
+            }
+
+        };
+
+        if(headerBtn) headerBtn.onclick = showIOSGuide;
+
+        if(sidebarBtn) sidebarBtn.onclick = showIOSGuide;
+
+    } else {
+
+        // Android/PC: Try Auto -> Fallback to Manual
+
+        const handleInstall = () => {
+
+            if (deferredPrompt) {
+
+                deferredPrompt.prompt();
+
+                deferredPrompt.userChoice.then((choiceResult) => {
+
+                    if (choiceResult.outcome === 'accepted') checkPwaStatus();
+
+                    deferredPrompt = null;
+
+                });
+
+            } else {
+
+                // If prompt not ready yet, show guide as fallback
+
+                document.getElementById('installGuideModal').classList.remove('hidden');
+
+                const title = document.getElementById('installGuideTitle');
+
+                if(title) title.innerText = "ติดตั้งแอพ";
+
+                const instructions = document.getElementById('installInstructions');
+
+                if(instructions) instructions.innerHTML = "หากไม่ขึ้นปุ่มติดตั้งอัตโนมัติ<br>ให้กดเมนูเบราว์เซอร์ แล้วเลือก <strong>'Install App'</strong> หรือ <strong>'Add to Home Screen'</strong>";
+
+            }
+
+        };
+
+        if(headerBtn) headerBtn.onclick = handleInstall;
+
+        if(sidebarBtn) sidebarBtn.onclick = handleInstall;
+
+    }
+
+}
+
+
+
+window.addEventListener('beforeinstallprompt', (e) => { 
+
+    e.preventDefault(); 
+
+    deferredPrompt = e; 
+
+    checkPwaStatus(); 
+
+});
+
+
+
+window.addEventListener('appinstalled', () => { 
+
+    console.log('App installed'); 
+
+    checkPwaStatus(); 
+
+});
+
+
+
+// --- GENERATE MANIFEST & ICONS ---
+
+const iconSvgUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23E63946' rx='80'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='900' font-style='normal' font-size='380'%3ES%3C/text%3E%3C/svg%3E";
+
+const manifestData = { name: "SUNNY Stock", short_name: "SUNNY", start_url: ".", display: "standalone", background_color: "#FFFFFF", theme_color: "#E63946", icons: [{ src: iconSvgUrl, sizes: "192x192 512x512", type: "image/svg+xml", purpose: "any maskable" }] };
+
+const stringManifest = JSON.stringify(manifestData);
+
+const blob = new Blob([stringManifest], {type: 'application/json'});
+
+const manifestURL = URL.createObjectURL(blob);
+
+document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
+
+const appleIcon = document.getElementById('apple-touch-icon');
+
+if(appleIcon) appleIcon.setAttribute('href', iconSvgUrl);
+
+
+
+// --- APP INIT ---
+
+function initFirebase() {
+
+    try {
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+        auth = firebase.auth();
+
+        db = firebase.firestore();
+
+
+
+        auth.onAuthStateChanged((user) => {
+
+            if (user) {
+
+                currentUser = user;
+
+                if (!user.isAnonymous) {
+
+                    db.collection('users').doc(user.uid).onSnapshot(doc => {
+
+                        currentUserProfile = doc.exists ? doc.data() : null;
+
+                        if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
+
+                    });
+
+                }
+
+                if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
+
+                
+
+                if (!configListenerSet) {
+
+                    db.collection("app_settings").doc("config").onSnapshot((doc) => {
+
+                        if (doc.exists) {
+
+                            const newData = doc.data();
+
+                            if(typeof checkAndNotifyNews === 'function') checkAndNotifyNews(newData.newsItems || []);
+
+                            appConfig = newData;
+
+                            if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
+
+                            if(!appConfig.newsItems) appConfig.newsItems = [];
+
+                            if(!appConfig.theme) appConfig.theme = 'default';
+
+                            localStorage.setItem('sunny_app_config', JSON.stringify(appConfig));
+
+                            if(typeof renderSidebar === 'function') renderSidebar(); 
+
+                            if(typeof renderNews === 'function') renderNews(); 
+
+                            if(typeof applyTheme === 'function') applyTheme(appConfig.theme);
+
+                            if(currentSystem && typeof switchSystem === 'function') switchSystem(currentSystem);
+
+                        } else { 
+
+                            db.collection("app_settings").doc("config").set(appConfig); 
+
+                        }
+
+                    }, error => console.error("Config Listener Error:", error));
+
+                    configListenerSet = true;
+
+                }
+
+            } else {
+
+                auth.signInAnonymously().catch(e => console.error("Anon Auth Error:", e));
+
+            }
+
+        });
+
+    } catch (e) { console.error("Firebase Init Error:", e); }
+
+}
+
+
+
+window.addEventListener('DOMContentLoaded', () => { 
+
+    initFirebase();
+
+    renderSidebar();
+
+    setupAutocomplete();
+
+    checkPwaStatus(); 
+
+    if(typeof renderNews === 'function') renderNews();
+
+    const params = new URLSearchParams(window.location.search);
+
+    const sharedMode = params.get('mode');
+
+    if (sharedMode) { checkUrlParams(); } 
+
+    else { setTimeout(() => { if(typeof switchSystem === 'function') switchSystem('WOOD'); }, 500); }
+
+    const s = document.getElementById('intro-splash');
+
+    if(s) { s.classList.add('opacity-0', 'pointer-events-none'); setTimeout(() => s.remove(), 700); }
+
+});
+
