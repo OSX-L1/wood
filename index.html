@@ -34,10 +34,10 @@
         .header-custom-bg { position: relative; min-height: 280px; }
         @media (min-width: 768px) { .header-custom-bg { min-height: 380px; } }
 
-        /* --- เพิ่มส่วนนี้: สไตล์กล่องข้อความสำหรับ PC/Desktop --- */
+        /* สไตล์กล่องข้อความสำหรับ PC (พื้นหลังกระจกฝ้า) */
         .header-content-glass { 
-            background: rgba(255, 255, 255, 0.65) !important; /* พื้นหลังสีขาวขุ่น */
-            backdrop-filter: blur(10px); /* เอฟเฟกต์เบลอ */
+            background: rgba(255, 255, 255, 0.65) !important; 
+            backdrop-filter: blur(10px); 
             padding: 1.5rem 2.5rem; 
             border-radius: 2rem; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
@@ -48,7 +48,7 @@
             z-index: 20;
         }
 
-        /* MOBILE HEADER ADJUSTMENTS */
+        /* ปรับแต่งสำหรับมือถือ */
         @media (max-width: 768px) { 
             .header-custom-bg { 
                 min-height: 200px; 
@@ -59,7 +59,6 @@
                 padding: 1.5rem !important; 
             } 
             .header-content-glass { 
-                /* สไตล์สำหรับมือถือ (ทับของ PC) */
                 width: auto; 
                 max-width: 85%; 
                 margin: 0; 
@@ -291,9 +290,17 @@
     <div id="quotationModal" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white w-full max-w-2xl rounded-none md:rounded-xl shadow-2xl overflow-hidden animate-fade-in-up my-auto">
             <div class="p-8 bg-white" id="quotationContent">
-                <div class="flex justify-between items-start mb-8 border-b border-slate-100 pb-6">
-                    <div><h1 class="text-3xl font-black text-sunny-red italic tracking-tighter">SUNNY</h1><p class="text-sm text-slate-500 font-bold mt-1">QUOTATION / ใบเสนอราคา</p></div>
-                    <div class="text-right"><div class="text-xs text-slate-400 uppercase font-bold">วันที่</div><div class="font-bold text-slate-800" id="qDate"></div><div class="text-xs text-slate-400 uppercase font-bold mt-2">ประเภท</div><div class="font-bold text-sunny-red bg-red-50 px-2 py-0.5 rounded" id="qType"></div></div>
+                <div id="quotationHeaderArea" class="flex justify-between items-start mb-8 border-b border-slate-100 pb-6">
+                    <div>
+                        <h1 class="text-3xl font-black text-sunny-red italic tracking-tighter">SUNNY</h1>
+                        <p class="text-sm text-slate-500 font-bold mt-1">QUOTATION / ใบเสนอราคา</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-slate-400 uppercase font-bold">วันที่</div>
+                        <div class="font-bold text-slate-800" id="qDate"></div>
+                        <div class="text-xs text-slate-400 uppercase font-bold mt-2">ประเภท</div>
+                        <div class="font-bold text-sunny-red bg-red-50 px-2 py-0.5 rounded" id="qType"></div>
+                    </div>
                 </div>
                 <div class="mb-6">
                     <table class="w-full text-sm">
@@ -315,10 +322,49 @@
         </div>
     </div>
 
+    <div id="editProfileModal" class="hidden fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in-up">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800 text-lg">✏️ แก้ไขข้อมูลร้านค้า</h3>
+                <button onclick="closeEditProfile()" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อโปรไฟล์ (Display Name)</label>
+                    <input type="text" id="edit-profile-name" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sunny-red outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อร้านค้า (Shop Name)</label>
+                    <input type="text" id="edit-shop-name" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sunny-red outline-none" placeholder="เช่น ร้านม่านสวย...">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">ที่อยู่/เบอร์โทร (Address)</label>
+                    <textarea id="edit-shop-address" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sunny-red outline-none h-20" placeholder="ที่อยู่ และ เบอร์ติดต่อ..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">โลโก้ร้าน (เลือกไฟล์ภาพ)</label>
+                    <div class="flex items-center gap-2">
+                        <label class="flex-1 cursor-pointer bg-slate-50 border border-dashed border-slate-300 rounded-lg p-3 text-center hover:bg-slate-100 transition-colors">
+                            <span class="text-xs text-slate-500" id="logo-file-label">คลิกเพื่อเลือกรูป...</span>
+                            <input type="file" id="edit-shop-logo-file" accept="image/*" class="hidden" onchange="handleLogoUpload(this)">
+                        </label>
+                        <div id="logo-preview" class="w-10 h-10 rounded border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                            <span class="text-[8px] text-slate-300">No Img</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="edit-shop-logo-base64">
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-2">
+                <button onclick="closeEditProfile()" class="flex-1 py-2 text-slate-500 font-bold text-sm bg-white border border-slate-200 rounded-xl hover:bg-slate-100">ยกเลิก</button>
+                <button onclick="saveUserProfile()" class="flex-1 py-2 bg-sunny-red text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-lg shadow-red-200 btn-bounce">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/config.js"></script>
     <script src="js/stock.js"></script>
     <script src="js/calc.js"></script>
     <script src="js/ui.js"></script>
 </body>
 </html>
-}
