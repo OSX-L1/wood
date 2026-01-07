@@ -163,6 +163,17 @@ function renderNews() {
     const scrollWrapper = document.getElementById('scrolling-news-wrapper');
     const scrollTrack = document.getElementById('news-ticker-track');
     
+    // Inject Styles if needed to guarantee animation
+    if (!document.getElementById('ticker-style-injection')) {
+        const style = document.createElement('style');
+        style.id = 'ticker-style-injection';
+        style.innerHTML = `
+            @keyframes verticalSlide { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+            .ticker-force-run { animation-play-state: running !important; }
+        `;
+        document.head.appendChild(style);
+    }
+    
     const news = appConfig.newsItems || [];
     if(news.length === 0) {
         if(container) container.classList.add('hidden');
@@ -194,28 +205,56 @@ function renderNews() {
         pinnedWrapper.appendChild(el);
     });
     
+    // --- SCROLLING NEWS LOGIC (REFINED) ---
     if (scrollItems.length > 0) {
         scrollWrapper.classList.remove('hidden');
         scrollTrack.innerHTML = '';
-        const createItem = (item) => `
-            <div class="h-28 flex items-center gap-3 px-2 w-full shrink-0 hover:bg-slate-50/50 transition-colors">
-                <div class="flex-1 min-w-0 flex flex-col justify-center h-full">
-                    <div class="flex items-center gap-2 mb-0.5">
-                        ${isDateNew(item.date) ? `<span class="px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold" style="background-color: ${item.badgeColor}; color: ${item.badgeTextColor}">${item.badgeLabel}</span>` : ''}
-                        <span class="text-[10px] text-slate-400">${formatDate(item.date)}</span>
+        
+        // Remove padding from track to ensure smooth loop calculation
+        scrollTrack.classList.remove('p-2'); 
+        
+        let itemsHtml = '';
+        scrollItems.forEach(item => {
+            const isNew = isDateNew(item.date);
+            // Added padding directly to item instead of track
+            itemsHtml += `
+                <div class="h-28 flex items-center gap-3 px-4 w-full shrink-0 hover:bg-slate-50/50 transition-colors border-b border-slate-50 last:border-0 box-border">
+                    <div class="flex-1 min-w-0 flex flex-col justify-center h-full">
+                        <div class="flex items-center gap-2 mb-1">
+                            ${isNew ? `<span class="px-2 py-0.5 rounded-[4px] text-[9px] font-bold shadow-sm" style="background-color: ${item.badgeColor}; color: ${item.badgeTextColor}">${item.badgeLabel}</span>` : ''}
+                            <span class="text-[10px] text-slate-400 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                ${formatDate(item.date)}
+                            </span>
+                        </div>
+                        <div class="text-sm font-medium whitespace-normal break-words leading-snug line-clamp-3" style="color: ${item.textColor}">${item.text}</div>
                     </div>
-                    <div class="text-sm font-medium whitespace-normal break-words leading-snug line-clamp-4" style="color: ${item.textColor}">${item.text}</div>
-                </div>
-            </div>`;
+                </div>`;
+        });
         
-        let html = '';
-        scrollItems.forEach(item => html += createItem(item));
-        if (scrollItems.length > 0) scrollItems.forEach(item => html += createItem(item));
+        // Double content for seamless loop
+        scrollTrack.innerHTML = itemsHtml + itemsHtml;
         
-        scrollTrack.innerHTML = html;
-        const speedVal = appConfig.newsSettings.speed || 3;
-        const totalDuration = (6 - speedVal) * scrollItems.length;
+        // Safe speed calculation
+        const settings = appConfig.newsSettings || { speed: 3 };
+        let speedVal = parseInt(settings.speed);
+        if (isNaN(speedVal) || speedVal < 1) speedVal = 3;
+        if (speedVal > 10) speedVal = 10;
+        
+        // Slower is nicer: 1=Slowest(10s), 5=Fastest(4s)
+        // Base duration per item (h-28 = 7rem)
+        const durationPerItem = 11 - (speedVal * 1.5); 
+        const totalDuration = Math.max(durationPerItem * scrollItems.length, 2);
+        
+        // Reset Animation
+        scrollTrack.style.animation = 'none';
+        scrollTrack.offsetHeight; /* Trigger Reflow */
         scrollTrack.style.animation = `verticalSlide ${totalDuration}s linear infinite`;
+        
+        // Interaction
+        scrollWrapper.onmouseenter = () => scrollTrack.style.animationPlayState = 'paused';
+        scrollWrapper.onmouseleave = () => scrollTrack.style.animationPlayState = 'running';
+
     } else {
         scrollWrapper.classList.add('hidden');
     }
@@ -302,8 +341,10 @@ function openConfig() {
     const titleInp = document.getElementById('conf-app-title');
     if(titleInp) titleInp.value = tempConfig.appTitle;
     
+    // Safe access for speed input
     const speedInp = document.getElementById('conf-news-speed');
-    if(speedInp) speedInp.value = tempConfig.newsSettings.speed || 3;
+    const safeSettings = tempConfig.newsSettings || { speed: 3 };
+    if(speedInp) speedInp.value = safeSettings.speed || 3;
     
     const logoutBtn = document.getElementById('logoutBtn');
     if(logoutBtn) logoutBtn.classList.remove('hidden');
@@ -386,7 +427,10 @@ function closeConfig() {
 
 function saveConfig() {
     tempConfig.appTitle = document.getElementById('conf-app-title').value;
-    tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value);
+    
+    // Ensure newsSettings structure
+    if (!tempConfig.newsSettings) tempConfig.newsSettings = {};
+    tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value) || 3;
     
     appConfig = tempConfig;
     applyTheme(appConfig.theme);
@@ -395,6 +439,7 @@ function saveConfig() {
         showToast("บันทึกสำเร็จ");
         closeConfig();
         renderSidebar();
+        renderNews(); // Refresh news immediately
     });
 }
 
