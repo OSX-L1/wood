@@ -6,11 +6,19 @@ const EMOJI_LIST = [
     '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'
 ];
 
-// --- GLOBAL VARIABLES ---
+// --- GLOBAL VARIABLES (ประกาศตัวแปรให้ครบ เพื่อกันจอค้าง) ---
 let currentUserProfile = null;
 let deferredPrompt; // For PWA
 let tempQuotes = []; // For Dashboard & History
-let tempConfig = { menus: [], newsItems: [], features: {} }; // Init with defaults
+let tempConfig = {}; // For Admin Editing
+let configListenerSet = false; // **สำคัญ: ต้องประกาศตัวนี้ ไม่งั้นเว็บค้าง**
+
+// --- ICONS FALLBACK (กัน Error ถ้าหาไฟล์ config ไม่เจอ) ---
+const ICONS = (typeof window.ICONS !== 'undefined') ? window.ICONS : {
+    'wood': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>',
+    'curtain': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>',
+    'roller': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>'
+};
 
 // --- UTILS ---
 function execCmd(command, value = null) {
@@ -199,7 +207,7 @@ function renderSidebar() {
     const container = document.getElementById('sidebar-menu-container');
     if (!container) return;
     
-    // Safety check for menus
+    // Check if menus exist, if not use default empty
     const menus = (appConfig && appConfig.menus) ? appConfig.menus : [];
     
     let html = `<div class="px-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">เช็คสต็อกสินค้า</div>`;
@@ -209,7 +217,10 @@ function renderSidebar() {
         const activeClass = currentSystem === menu.id 
             ? 'bg-red-50 text-sunny-red border-sunny-red' 
             : 'border-transparent text-slate-600 hover:bg-red-100 hover:text-red-700 hover:border-red-600';
-        const iconSvg = ICONS[menu.icon] || ICONS['wood'];
+        
+        // Safety for icon
+        const iconSvg = ICONS[menu.icon] || ICONS['wood']; 
+        
         html += `
             <a href="#" onclick="switchSystem('${menu.id}')" class="menu-item ${activeClass} group flex items-center px-6 py-3 transition-all duration-200 ease-out border-l-4">
                 <div class="w-8 flex justify-center mr-2 transition-transform group-hover:scale-110 duration-200">${iconSvg}</div>
@@ -333,7 +344,7 @@ function openConfig() {
     // Ensure tempConfig is initialized
     tempConfig = (appConfig) ? JSON.parse(JSON.stringify(appConfig)) : {};
     
-    // Safety Init for missing properties
+    // Safety Init for missing properties (Prevent Admin Menu Disappearing)
     if(!tempConfig.menus) tempConfig.menus = [];
     if(!tempConfig.newsItems) tempConfig.newsItems = [];
     if(!tempConfig.calcSettings) tempConfig.calcSettings = { enabled: true, wood: {}, pvc: {}, roller: {} };
@@ -414,7 +425,7 @@ function requestNotificationPermission() { if (!("Notification" in window)) retu
 function checkAndNotifyNews(newsItems) { if (!newsItems || newsItems.length === 0) return; const latest = [...newsItems].sort((a,b) => b.id - a.id)[0]; const lastId = parseInt(localStorage.getItem('last_notified_news_id') || '0'); if (latest.id > lastId) { if (Notification.permission === "granted") new Notification("ประกาศใหม่", { body: latest.text, icon: "https://via.placeholder.com/128" }); else showToast("ประกาศใหม่: " + latest.text); localStorage.setItem('last_notified_news_id', latest.id); } }
 function applyTheme(theme) { document.body.classList.remove('theme-christmas'); let primary = '#E63946', dark = '#1D3557', showScene = 'none'; if (theme === 'christmas') { document.body.classList.add('theme-christmas'); primary = '#D62828'; dark = '#14532D'; showScene = 'block'; } const scene = document.getElementById('xmas-scene'); if(scene) scene.style.display = showScene; document.querySelector('meta[name="theme-color"]').setAttribute("content", primary); document.documentElement.style.setProperty('--sunny-red', primary); document.documentElement.style.setProperty('--sunny-dark', dark); }
 
-// --- ADMIN RENDERERS (FULL VERSION) ---
+// --- ADMIN RENDERERS (FULL VERSION: กู้คืนเมนูจัดการร้านค้าและข่าวสาร) ---
 function renderAdminCalcInputs() { 
     const container = document.getElementById('tab-content-calc'); 
     if(!container) return; 
@@ -662,7 +673,6 @@ async function renderAdminDashboard() {
     const container = document.getElementById('tab-content-dashboard');
     if (!container) return;
 
-    // Loading State
     container.innerHTML = `<div class="flex flex-col items-center justify-center h-64"><span class="loader w-10 h-10 border-4 border-slate-200 border-t-sunny-red rounded-full mb-4"></span><span class="text-slate-400">กำลังประมวลผลข้อมูล...</span></div>`;
 
     try {
@@ -707,14 +717,8 @@ async function renderAdminDashboard() {
         container.innerHTML = `
             <div class="max-w-5xl mx-auto space-y-6">
                 <div class="flex justify-between items-center mb-2">
-                    <div>
-                        <h3 class="text-2xl font-black text-slate-800">Overview</h3>
-                        <p class="text-xs text-slate-400">ภาพรวมระบบล่าสุด</p>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xs font-bold text-slate-400">อัพเดทล่าสุด</div>
-                        <div class="text-sm font-bold text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>
-                    </div>
+                    <div><h3 class="text-2xl font-black text-slate-800">Overview</h3><p class="text-xs text-slate-400">ภาพรวมระบบล่าสุด</p></div>
+                    <div class="text-right"><div class="text-xs font-bold text-slate-400">อัพเดทล่าสุด</div><div class="text-sm font-bold text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div></div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -848,7 +852,7 @@ document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL
 const appleIcon = document.getElementById('apple-touch-icon');
 if(appleIcon) appleIcon.setAttribute('href', iconSvgUrl);
 
-// --- APP INIT (FIXED SPLASH SCREEN FREEZE) ---
+// --- APP INIT (FIXED: SPLASH SCREEN & CONFIG) ---
 function initFirebase() {
     try {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
