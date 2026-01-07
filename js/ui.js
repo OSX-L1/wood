@@ -1015,32 +1015,83 @@ function showToast(msg) {
     }
 }
 
-// --- PWA INSTALLATION ---
+// --- PWA INSTALLATION & IOS SUPPORT ---
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => { 
-    e.preventDefault(); 
-    deferredPrompt = e; 
-    checkPwaStatus(); 
-});
 
-function isStandalone() { return (window.matchMedia('(display-mode: standalone)').matches) || (window.navigator.standalone) || document.referrer.includes('android-app://'); }
+// 1. ตรวจจับว่าเป็น iOS หรือไม่
+function isIOS() {
+    return [
+        'iPad Simulator',
+        'iPhone Simulator',
+        'iPod Simulator',
+        'iPad',
+        'iPhone',
+        'iPod'
+    ].includes(navigator.platform) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+}
 
+// 2. ตรวจสอบสถานะการติดตั้ง (รองรับทั้ง Android และ iOS)
 function checkPwaStatus() { 
     const sidebarBtn = document.getElementById('pwaInstallBtn'); 
     const headerBtn = document.getElementById('headerInstallBtn'); 
-    
-    if(isStandalone()) { 
+    const isDeviceIOS = isIOS();
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    // ถ้าติดตั้งแล้ว ให้ซ่อนปุ่มทั้งหมด
+    if(isStandalone) { 
         if(sidebarBtn) sidebarBtn.classList.add('hidden'); 
         if(headerBtn) headerBtn.classList.add('hidden'); 
         return; 
     } 
     
-    if(headerBtn) headerBtn.classList.remove('hidden'); 
-    if (sidebarBtn) { 
-        sidebarBtn.classList.remove('hidden'); 
-        sidebarBtn.onclick = installApp; 
-    } 
+    // แสดงปุ่มถ้าเป็น Android (มี deferredPrompt) หรือเป็น iOS
+    if (deferredPrompt || isDeviceIOS) {
+        if(headerBtn) headerBtn.classList.remove('hidden'); 
+        if(sidebarBtn) sidebarBtn.classList.remove('hidden');
+
+        // ถ้าเป็น iOS: เปลี่ยนคลิกเป็นการเปิดคู่มือสอน
+        if (isDeviceIOS) {
+            const showIOSGuide = () => {
+                const modal = document.getElementById('installGuideModal');
+                const title = document.getElementById('installGuideTitle');
+                const instructions = document.getElementById('installInstructions');
+                
+                if (modal && title && instructions) {
+                    title.innerText = "ติดตั้งบน iOS (iPhone/iPad)";
+                    instructions.innerHTML = `
+                        <div class="flex flex-col gap-4 items-center text-center">
+                            <p class="text-sunny-red font-bold">เนื่องจาก iOS ไม่รองรับการติดตั้งอัตโนมัติ</p>
+                            <p>กรุณาทำตามขั้นตอนดังนี้:</p>
+                            <div class="flex items-center gap-3 text-left bg-slate-50 p-3 rounded-xl w-full border border-slate-100">
+                                <span class="text-2xl">1️⃣</span>
+                                <span class="text-sm">แตะปุ่ม <strong>แชร์ (Share)</strong> <br><span class="text-xs text-slate-400">ไอคอนสี่เหลี่ยมมีลูกศรชี้ขึ้น ด้านล่างจอ</span></span>
+                            </div>
+                            <div class="flex items-center gap-3 text-left bg-slate-50 p-3 rounded-xl w-full border border-slate-100">
+                                <span class="text-2xl">2️⃣</span>
+                                <span class="text-sm">เลื่อนหาเมนู <strong>"เพิ่มไปยังหน้าจอโฮม"</strong> <br><span class="text-xs text-slate-400">(Add to Home Screen)</span></span>
+                            </div>
+                            <div class="text-xs text-slate-400 mt-2">จากนั้นกด "เพิ่ม (Add)" ที่มุมขวาบน</div>
+                        </div>
+                    `;
+                    modal.classList.remove('hidden');
+                }
+            };
+            
+            if(headerBtn) headerBtn.onclick = showIOSGuide;
+            if(sidebarBtn) sidebarBtn.onclick = showIOSGuide;
+        } else {
+            // Android Logic เดิม (ติดตั้งอัตโนมัติ)
+            if(headerBtn) headerBtn.onclick = installApp;
+            if(sidebarBtn) sidebarBtn.onclick = installApp;
+        }
+    }
 }
+
+window.addEventListener('beforeinstallprompt', (e) => { 
+    e.preventDefault(); 
+    deferredPrompt = e; 
+    checkPwaStatus(); 
+});
 
 async function installApp() { 
     if (deferredPrompt) { 
@@ -1052,6 +1103,7 @@ async function installApp() {
         } 
         return; 
     } 
+    // กรณี Fallback
     document.getElementById('installGuideModal').classList.remove('hidden'); 
 }
 
@@ -1060,7 +1112,7 @@ window.addEventListener('appinstalled', () => {
     checkPwaStatus(); 
 });
 
-// --- GENERATE DYNAMIC MANIFEST ---
+// --- GENERATE DYNAMIC MANIFEST & IOS ICON ---
 const iconSvgUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23E63946' rx='80'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='900' font-style='normal' font-size='380'%3ES%3C/text%3E%3C/svg%3E";
 const manifestData = {
     name: "SUNNY Stock",
@@ -1083,66 +1135,12 @@ const blob = new Blob([stringManifest], {type: 'application/json'});
 const manifestURL = URL.createObjectURL(blob);
 document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
 
+// --- UPDATE IOS ICON ---
+// สั่งให้ Link ที่เราเพิ่มใน index.html ใช้รูปเดียวกับ Manifest
+const appleIcon = document.getElementById('apple-touch-icon');
+if(appleIcon) appleIcon.setAttribute('href', iconSvgUrl);
+
 // --- APP INIT ---
-function initFirebase() {
-    try {
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        db = firebase.firestore();
-
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                console.log("Auth Status:", user.isAnonymous ? "Guest Mode" : "Member Mode (" + user.email + ")");
-                
-                // --- NEW: Fetch User Profile ---
-                if (!user.isAnonymous) {
-                    db.collection('users').doc(user.uid).onSnapshot(doc => {
-                        currentUserProfile = doc.exists ? doc.data() : null;
-                        if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
-                    });
-                }
-                // -------------------------------
-                
-                if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
-                
-                if (!configListenerSet) {
-                    db.collection("app_settings").doc("config").onSnapshot((doc) => {
-                        if (doc.exists) {
-                            const newData = doc.data();
-                            if(typeof checkAndNotifyNews === 'function') checkAndNotifyNews(newData.newsItems || []);
-                            appConfig = newData;
-                            
-                            // Deep Merge Defaults incase new fields added
-                            if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
-                            if(!appConfig.calcSettings.wood) appConfig.calcSettings.wood = DEFAULT_CONFIG.calcSettings.wood;
-                            if(!appConfig.calcSettings.pvc) appConfig.calcSettings.pvc = DEFAULT_CONFIG.calcSettings.pvc;
-                            if(!appConfig.calcSettings.roller) appConfig.calcSettings.roller = DEFAULT_CONFIG.calcSettings.roller;
-
-                            if(!appConfig.newsItems) appConfig.newsItems = [];
-                            if(!appConfig.theme) appConfig.theme = 'default';
-                            
-                            localStorage.setItem('sunny_app_config', JSON.stringify(appConfig));
-                            
-                            if(typeof renderSidebar === 'function') renderSidebar(); 
-                            if(typeof renderNews === 'function') renderNews(); 
-                            if(typeof applyTheme === 'function') applyTheme(appConfig.theme);
-                            if(currentSystem && typeof switchSystem === 'function') switchSystem(currentSystem);
-                        } else { 
-                            db.collection("app_settings").doc("config").set(appConfig); 
-                        }
-                    }, error => console.error("Config Listener Error:", error));
-                    configListenerSet = true;
-                }
-
-            } else {
-                console.log("No user, signing in anonymously...");
-                auth.signInAnonymously().catch(e => console.error("Anon Auth Error:", e));
-            }
-        });
-    } catch (e) { console.error("Firebase Init Error:", e); }
-}
-
 window.addEventListener('DOMContentLoaded', () => { 
     // 1. Init Firebase (Config)
     initFirebase();
@@ -1152,6 +1150,8 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // 3. Setup Logic (Stock)
     setupAutocomplete();
+    
+    // ตรวจสอบปุ่มติดตั้ง (Android/iOS)
     checkPwaStatus();
     
     // 4. Always Render News First (Fixes "News Missing")
