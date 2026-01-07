@@ -9,6 +9,8 @@ const EMOJI_LIST = [
 // --- GLOBAL VARIABLES ---
 let currentUserProfile = null;
 let deferredPrompt; // For PWA
+let tempQuotes = []; // For Dashboard & History
+let tempConfig = {}; // For Admin Editing
 
 // --- UTILS ---
 function execCmd(command, value = null) {
@@ -387,7 +389,6 @@ function switchAdminTab(tab) {
 }
 
 function toggleSidebar() { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); sb.classList.toggle('-translate-x-full'); ov.classList.toggle('hidden'); }
-function showToast(msg) { const t = document.getElementById('toast'); const tm = document.getElementById('toast-message'); if(t && tm) { tm.innerText = msg; t.classList.remove('opacity-0','pointer-events-none','toast-hide'); t.classList.add('toast-show'); setTimeout(()=>{t.classList.remove('toast-show');t.classList.add('toast-hide');},2500); } }
 function requestNotificationPermission() { if (!("Notification" in window)) return alert("อุปกรณ์ไม่รองรับ"); Notification.requestPermission().then(p => { if (p === "granted") showToast("เปิดแจ้งเตือนแล้ว"); else alert("กรุณากดอนุญาตเพื่อรับแจ้งเตือน"); renderSidebar(); }); }
 function checkAndNotifyNews(newsItems) { if (!newsItems || newsItems.length === 0) return; const latest = [...newsItems].sort((a,b) => b.id - a.id)[0]; const lastId = parseInt(localStorage.getItem('last_notified_news_id') || '0'); if (latest.id > lastId) { if (Notification.permission === "granted") new Notification("ประกาศใหม่", { body: latest.text, icon: "https://via.placeholder.com/128" }); else showToast("ประกาศใหม่: " + latest.text); localStorage.setItem('last_notified_news_id', latest.id); } }
 function applyTheme(theme) { document.body.classList.remove('theme-christmas'); let primary = '#E63946', dark = '#1D3557', showScene = 'none'; if (theme === 'christmas') { document.body.classList.add('theme-christmas'); primary = '#D62828'; dark = '#14532D'; showScene = 'block'; } const scene = document.getElementById('xmas-scene'); if(scene) scene.style.display = showScene; document.querySelector('meta[name="theme-color"]').setAttribute("content", primary); document.documentElement.style.setProperty('--sunny-red', primary); document.documentElement.style.setProperty('--sunny-dark', dark); }
@@ -416,6 +417,9 @@ function renderAdminMenu() {
     if (!list) return;
     list.innerHTML = '';
     
+    // Ensure tempConfig.menus is array (Fallback)
+    if(!tempConfig.menus) tempConfig.menus = [];
+
     tempConfig.menus.forEach((menu, idx) => {
         const slots = [
             { key: 'bgImage1', label: 'ช่องซ้าย (Left)' },
@@ -513,6 +517,10 @@ window.removeMenuImage = (menuIdx, slotKey, imgIdx) => {
 function renderAdminNews() {
     const list = document.getElementById('admin-news-list'); 
     list.innerHTML = '';
+    
+    // Ensure newsItems exists (Fallback)
+    if(!tempConfig.newsItems) tempConfig.newsItems = [];
+
     const sorted = [...tempConfig.newsItems].sort((a,b) => (b.pinned===a.pinned)? 0 : b.pinned? 1 : -1);
     
     sorted.forEach((item, idx) => {
@@ -619,23 +627,6 @@ function deleteNews(idx) {
     if(confirm('ลบประกาศนี้?')) {
         tempConfig.newsItems.splice(idx, 1); 
         renderAdminNews(); 
-    }
-}
-
-function renderAdminFeatures() {
-    const list = document.getElementById('admin-features-list');
-    list.innerHTML = '';
-    Object.keys(tempConfig.features).forEach(key => {
-        list.innerHTML += `<div class="flex justify-between items-center p-3 bg-white border rounded-xl"><span class="font-mono text-sm">${key}</span><input type="checkbox" ${tempConfig.features[key]?'checked':''} onchange="tempConfig.features['${key}']=this.checked" class="w-5 h-5 accent-purple-600"></div>`;
-    });
-}
-
-function addNewFeature() {
-    const key = document.getElementById('new-feature-key').value.trim();
-    if(key) {
-        tempConfig.features[key] = false;
-        renderAdminFeatures();
-        document.getElementById('new-feature-key').value='';
     }
 }
 
@@ -843,8 +834,6 @@ async function renderAdminDashboard() {
 }
 
 // --- PWA INSTALLATION & IOS SUPPORT (HYBRID MODE) ---
-let deferredPrompt;
-
 function isIOS() {
     return [
         'iPad Simulator',
@@ -949,23 +938,24 @@ function initFirebase() {
                 }
                 if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
                 
-                if (!configListenerSet) {
+                if (typeof configListenerSet === 'undefined' || !configListenerSet) {
                     db.collection("app_settings").doc("config").onSnapshot((doc) => {
                         if (doc.exists) {
                             const newData = doc.data();
                             if(typeof checkAndNotifyNews === 'function') checkAndNotifyNews(newData.newsItems || []);
                             appConfig = newData;
                             if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
-                            if(!appConfig.calcSettings.wood) appConfig.calcSettings.wood = DEFAULT_CONFIG.calcSettings.wood;
-                            if(!appConfig.calcSettings.pvc) appConfig.calcSettings.pvc = DEFAULT_CONFIG.calcSettings.pvc;
-                            if(!appConfig.calcSettings.roller) appConfig.calcSettings.roller = DEFAULT_CONFIG.calcSettings.roller;
-
                             if(!appConfig.newsItems) appConfig.newsItems = [];
                             if(!appConfig.theme) appConfig.theme = 'default';
+                            if(!appConfig.menus) appConfig.menus = DEFAULT_CONFIG.menus; // Ensure menus exist
                             localStorage.setItem('sunny_app_config', JSON.stringify(appConfig));
+                            
+                            // Re-render UI components
                             if(typeof renderSidebar === 'function') renderSidebar(); 
                             if(typeof renderNews === 'function') renderNews(); 
                             if(typeof applyTheme === 'function') applyTheme(appConfig.theme);
+                            if(typeof renderAdminMenu === 'function' && !document.getElementById('adminConfigModal').classList.contains('hidden')) renderAdminMenu(); // Refresh Admin if open
+                            
                             if(currentSystem && typeof switchSystem === 'function') switchSystem(currentSystem);
                         } else { 
                             db.collection("app_settings").doc("config").set(appConfig); 
