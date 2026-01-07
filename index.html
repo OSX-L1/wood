@@ -34,6 +34,20 @@
         .header-custom-bg { position: relative; min-height: 280px; }
         @media (min-width: 768px) { .header-custom-bg { min-height: 380px; } }
 
+        /* --- เพิ่มส่วนนี้: สไตล์กล่องข้อความสำหรับ PC/Desktop --- */
+        .header-content-glass { 
+            background: rgba(255, 255, 255, 0.65) !important; /* พื้นหลังสีขาวขุ่น */
+            backdrop-filter: blur(10px); /* เอฟเฟกต์เบลอ */
+            padding: 1.5rem 2.5rem; 
+            border-radius: 2rem; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            display: inline-block; 
+            max-width: 70%; 
+            border: 1px solid rgba(255,255,255,0.6); 
+            position: relative;
+            z-index: 20;
+        }
+
         /* MOBILE HEADER ADJUSTMENTS */
         @media (max-width: 768px) { 
             .header-custom-bg { 
@@ -45,6 +59,7 @@
                 padding: 1.5rem !important; 
             } 
             .header-content-glass { 
+                /* สไตล์สำหรับมือถือ (ทับของ PC) */
                 width: auto; 
                 max-width: 85%; 
                 margin: 0; 
@@ -306,3 +321,4 @@
     <script src="js/ui.js"></script>
 </body>
 </html>
+}
