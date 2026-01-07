@@ -6,6 +6,9 @@ const EMOJI_LIST = [
     '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'
 ];
 
+// --- GLOBAL USER PROFILE VAR ---
+let currentUserProfile = null;
+
 function execCmd(command, value = null) {
     document.execCommand(command, false, value);
 }
@@ -39,6 +42,7 @@ function logoutUser() {
     if (confirm("ต้องการออกจากระบบหรือไม่?")) {
         auth.signOut().then(() => {
             showToast("ออกจากระบบแล้ว");
+            currentUserProfile = null; // Clear profile on logout
         });
     }
 }
@@ -61,17 +65,27 @@ function renderUserSidebar(user) {
     if (!container) return; 
 
     if (user && !user.isAnonymous) {
+        // ใช้ชื่อจาก Profile ที่ตั้งเอง หรือใช้ชื่อจาก Google
+        const displayName = (currentUserProfile && currentUserProfile.displayName) ? currentUserProfile.displayName : user.displayName;
+        const shopNameLabel = (currentUserProfile && currentUserProfile.shopName) ? `<div class="text-[10px] text-sunny-red font-bold truncate">${currentUserProfile.shopName}</div>` : '';
+
         container.innerHTML = `
             <div class="flex items-center gap-3 p-3 bg-red-50 rounded-xl border border-red-100 mb-2">
                 <img src="${user.photoURL || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full border-2 border-white shadow-sm">
                 <div class="flex-1 min-w-0">
                     <div class="text-xs font-bold text-slate-400">สวัสดี,</div>
-                    <div class="text-sm font-bold text-slate-700 truncate">${user.displayName}</div>
+                    <div class="text-sm font-bold text-slate-700 truncate">${displayName}</div>
+                    ${shopNameLabel}
                 </div>
                 <button onclick="logoutUser()" class="text-slate-400 hover:text-red-500 p-1" title="ออกจากระบบ">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
             </div>
+            
+            <button onclick="openEditProfile()" class="w-full mb-2 flex items-center justify-center gap-2 bg-white text-slate-600 border border-slate-200 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 hover:text-sunny-red hover:border-red-100 transition-all shadow-sm">
+                ✏️ แก้ไขข้อมูลร้านค้า
+            </button>
+
             <button onclick="openHistoryModal()" class="w-full mb-4 flex items-center justify-center gap-2 bg-white text-slate-600 border border-slate-200 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-50 hover:text-sunny-red hover:border-red-100 transition-all shadow-sm btn-bounce">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
                 ดูประวัติที่บันทึกไว้
@@ -89,6 +103,86 @@ function renderUserSidebar(user) {
             </button>
         `;
     }
+}
+
+// --- USER PROFILE & SHOP SETTINGS ---
+function openEditProfile() {
+    const modal = document.getElementById('editProfileModal');
+    if(!modal) return;
+    modal.classList.remove('hidden');
+
+    // Pre-fill Data
+    const nameInput = document.getElementById('edit-profile-name');
+    const shopNameInput = document.getElementById('edit-shop-name');
+    const shopAddrInput = document.getElementById('edit-shop-address');
+    const logoPreview = document.getElementById('logo-preview');
+    const logoInput = document.getElementById('edit-shop-logo-base64');
+
+    if(currentUserProfile) {
+        nameInput.value = currentUserProfile.displayName || currentUser.displayName || '';
+        shopNameInput.value = currentUserProfile.shopName || '';
+        shopAddrInput.value = currentUserProfile.shopAddress || '';
+        if(currentUserProfile.shopLogo) {
+            logoPreview.innerHTML = `<img src="${currentUserProfile.shopLogo}" class="w-full h-full object-cover">`;
+            logoInput.value = currentUserProfile.shopLogo;
+        } else {
+            logoPreview.innerHTML = `<span class="text-[8px] text-slate-300">No Img</span>`;
+            logoInput.value = '';
+        }
+    } else {
+        nameInput.value = currentUser.displayName || '';
+    }
+}
+
+function closeEditProfile() {
+    document.getElementById('editProfileModal').classList.add('hidden');
+}
+
+function handleLogoUpload(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        // Check size (Limit 500KB to prevent Firestore bloat)
+        if (file.size > 500 * 1024) {
+            alert("ขนาดไฟล์รูปภาพต้องไม่เกิน 500KB");
+            input.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64 = e.target.result;
+            document.getElementById('logo-preview').innerHTML = `<img src="${base64}" class="w-full h-full object-cover">`;
+            document.getElementById('edit-shop-logo-base64').value = base64;
+            document.getElementById('logo-file-label').innerText = file.name;
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+function saveUserProfile() {
+    if(!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+    const name = document.getElementById('edit-profile-name').value.trim();
+    const shopName = document.getElementById('edit-shop-name').value.trim();
+    const address = document.getElementById('edit-shop-address').value.trim();
+    const logo = document.getElementById('edit-shop-logo-base64').value;
+
+    const dataToSave = {
+        displayName: name,
+        shopName: shopName,
+        shopAddress: address,
+        shopLogo: logo
+    };
+
+    db.collection('users').doc(uid).set(dataToSave, { merge: true }).then(() => {
+        showToast("บันทึกข้อมูลเรียบร้อย");
+        closeEditProfile();
+        // Update Local State
+        currentUserProfile = dataToSave;
+        renderUserSidebar(currentUser);
+    }).catch(e => {
+        alert("เกิดข้อผิดพลาด: " + e.message);
+    });
 }
 
 function renderSidebar() {
@@ -990,6 +1084,65 @@ const manifestURL = URL.createObjectURL(blob);
 document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
 
 // --- APP INIT ---
+function initFirebase() {
+    try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                console.log("Auth Status:", user.isAnonymous ? "Guest Mode" : "Member Mode (" + user.email + ")");
+                
+                // --- NEW: Fetch User Profile ---
+                if (!user.isAnonymous) {
+                    db.collection('users').doc(user.uid).onSnapshot(doc => {
+                        currentUserProfile = doc.exists ? doc.data() : null;
+                        if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
+                    });
+                }
+                // -------------------------------
+                
+                if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
+                
+                if (!configListenerSet) {
+                    db.collection("app_settings").doc("config").onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const newData = doc.data();
+                            if(typeof checkAndNotifyNews === 'function') checkAndNotifyNews(newData.newsItems || []);
+                            appConfig = newData;
+                            
+                            // Deep Merge Defaults incase new fields added
+                            if(!appConfig.calcSettings) appConfig.calcSettings = DEFAULT_CONFIG.calcSettings;
+                            if(!appConfig.calcSettings.wood) appConfig.calcSettings.wood = DEFAULT_CONFIG.calcSettings.wood;
+                            if(!appConfig.calcSettings.pvc) appConfig.calcSettings.pvc = DEFAULT_CONFIG.calcSettings.pvc;
+                            if(!appConfig.calcSettings.roller) appConfig.calcSettings.roller = DEFAULT_CONFIG.calcSettings.roller;
+
+                            if(!appConfig.newsItems) appConfig.newsItems = [];
+                            if(!appConfig.theme) appConfig.theme = 'default';
+                            
+                            localStorage.setItem('sunny_app_config', JSON.stringify(appConfig));
+                            
+                            if(typeof renderSidebar === 'function') renderSidebar(); 
+                            if(typeof renderNews === 'function') renderNews(); 
+                            if(typeof applyTheme === 'function') applyTheme(appConfig.theme);
+                            if(currentSystem && typeof switchSystem === 'function') switchSystem(currentSystem);
+                        } else { 
+                            db.collection("app_settings").doc("config").set(appConfig); 
+                        }
+                    }, error => console.error("Config Listener Error:", error));
+                    configListenerSet = true;
+                }
+
+            } else {
+                console.log("No user, signing in anonymously...");
+                auth.signInAnonymously().catch(e => console.error("Anon Auth Error:", e));
+            }
+        });
+    } catch (e) { console.error("Firebase Init Error:", e); }
+}
+
 window.addEventListener('DOMContentLoaded', () => { 
     // 1. Init Firebase (Config)
     initFirebase();
