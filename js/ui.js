@@ -199,6 +199,9 @@ function renderSidebar() {
     const container = document.getElementById('sidebar-menu-container');
     if (!container) return;
     
+    // Safety check for appConfig
+    if(typeof appConfig === 'undefined' || !appConfig.menus) return;
+
     let html = `<div class="px-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">เช็คสต็อกสินค้า</div>`;
     
     appConfig.menus.forEach(menu => {
@@ -215,7 +218,7 @@ function renderSidebar() {
     });
 
     const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
-    if (appConfig.calcSettings.enabled || isAdmin) {
+    if ((appConfig.calcSettings && appConfig.calcSettings.enabled) || isAdmin) {
         html += `<div class="px-6 mt-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between"><span>ระบบคำนวณราคา</span>${!appConfig.calcSettings.enabled ? '<span class="text-[9px] bg-red-100 text-red-500 px-1 rounded">Admin Only</span>' : ''}</div>`;
         const calcClass = "group flex items-center px-6 py-3 text-slate-600 hover:bg-indigo-50 hover:text-indigo-900 transition-all duration-200 ease-out border-l-4 border-transparent hover:border-indigo-900";
         const iconRollerExt = `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>`;
@@ -319,90 +322,27 @@ function renderNews() {
     }
 }
 
-// --- ADMIN FUNCTIONS ---
 function checkAdminLogin() { if (localStorage.getItem('isAdminLoggedIn') === 'true') { openConfig(); } else { openAdminLogin(); } }
 function openAdminLogin() { document.getElementById('adminLoginModal').classList.remove('hidden'); document.getElementById('adminPassword').value=''; document.getElementById('loginError').classList.add('hidden'); document.getElementById('adminPassword').focus(); }
 function closeAdminLogin() { document.getElementById('adminLoginModal').classList.add('hidden'); }
 function handleLogin() { if(document.getElementById('adminPassword').value === 'sn1988') { localStorage.setItem('isAdminLoggedIn', 'true'); closeAdminLogin(); showToast("เข้าสู่ระบบสำเร็จ"); openConfig(); renderSidebar(); } else { document.getElementById('loginError').classList.remove('hidden'); } }
 function logoutAdmin() { localStorage.removeItem('isAdminLoggedIn'); closeConfig(); showToast("ออกจากระบบแล้ว"); renderSidebar(); }
-
-function openConfig() { 
-    tempConfig = JSON.parse(JSON.stringify(appConfig)); 
-    const modal = document.getElementById('adminConfigModal'); 
-    if(modal) modal.classList.remove('hidden'); 
-    
-    const titleInp = document.getElementById('conf-app-title'); 
-    if(titleInp) titleInp.value = tempConfig.appTitle; 
-    
-    const speedInp = document.getElementById('conf-news-speed'); 
-    const safeSettings = tempConfig.newsSettings || { speed: 3 }; 
-    if(speedInp) speedInp.value = safeSettings.speed || 3; 
-    
-    const logoutBtn = document.getElementById('logoutBtn'); 
-    if(logoutBtn) logoutBtn.classList.remove('hidden'); 
-    
-    const calcEn = document.getElementById('conf-calc-enabled'); 
-    if(calcEn) calcEn.checked = tempConfig.calcSettings.enabled; 
-    
-    renderAdminCalcInputs(); 
-    
-    const theme = tempConfig.theme || 'default'; 
-    const radios = document.getElementsByName('app-theme'); 
-    for(const r of radios) { r.checked = (r.value === theme); } 
-    
-    const st = document.getElementById('admin-mode-status'); 
-    if(st) { 
-        const isConnected = auth && auth.currentUser; 
-        st.innerText = isConnected ? "สถานะ: Online Mode" : "สถานะ: Offline Mode"; 
-        st.className = isConnected ? "text-xs font-bold text-green-600" : "text-xs font-bold text-red-600"; 
-    } 
-    switchAdminTab('dashboard'); 
-}
-
+function openConfig() { tempConfig = JSON.parse(JSON.stringify(appConfig)); const modal = document.getElementById('adminConfigModal'); if(modal) modal.classList.remove('hidden'); const titleInp = document.getElementById('conf-app-title'); if(titleInp) titleInp.value = tempConfig.appTitle; const speedInp = document.getElementById('conf-news-speed'); const safeSettings = tempConfig.newsSettings || { speed: 3 }; if(speedInp) speedInp.value = safeSettings.speed || 3; const logoutBtn = document.getElementById('logoutBtn'); if(logoutBtn) logoutBtn.classList.remove('hidden'); const calcEn = document.getElementById('conf-calc-enabled'); if(calcEn) calcEn.checked = tempConfig.calcSettings.enabled; renderAdminCalcInputs(); const theme = tempConfig.theme || 'default'; const radios = document.getElementsByName('app-theme'); for(const r of radios) { r.checked = (r.value === theme); } const st = document.getElementById('admin-mode-status'); if(st) { const isConnected = auth && auth.currentUser; st.innerText = isConnected ? "สถานะ: Online Mode" : "สถานะ: Offline Mode"; st.className = isConnected ? "text-xs font-bold text-green-600" : "text-xs font-bold text-red-600"; } switchAdminTab('dashboard'); }
 function closeConfig() { applyTheme(appConfig.theme); document.getElementById('adminConfigModal').classList.add('hidden'); }
-
-function saveConfig() { 
-    tempConfig.appTitle = document.getElementById('conf-app-title').value; 
-    if (!tempConfig.newsSettings) tempConfig.newsSettings = {}; 
-    tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value) || 3; 
-    appConfig = tempConfig; 
-    applyTheme(appConfig.theme); 
-    db.collection("app_settings").doc("config").set(appConfig).then(()=>{ showToast("บันทึกสำเร็จ"); closeConfig(); renderSidebar(); renderNews(); }); 
-}
-
-function switchAdminTab(tab) { 
-    ['menu','news','calc','saved', 'theme', 'features', 'dashboard'].forEach(t => { 
-        const btn = document.getElementById('tab-btn-'+t); 
-        const content = document.getElementById('tab-content-'+t); 
-        if(btn) btn.className = "px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1"; 
-        if(content) content.classList.add('hidden'); 
-    }); 
-    const activeBtn = document.getElementById('tab-btn-'+tab); 
-    const activeContent = document.getElementById('tab-content-'+tab); 
-    if(activeBtn) activeBtn.className = "px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap flex items-center gap-1"; 
-    if(activeContent) activeContent.classList.remove('hidden'); 
-    
-    if(tab === 'menu') renderAdminMenu(); 
-    if(tab === 'news') renderAdminNews(); 
-    if(tab === 'saved') renderQuotationsList('saved-quotations-list', 'all'); 
-    if(tab === 'features') renderAdminFeatures(); 
-    if(tab === 'dashboard') renderAdminDashboard(); 
-}
-
+function saveConfig() { tempConfig.appTitle = document.getElementById('conf-app-title').value; if (!tempConfig.newsSettings) tempConfig.newsSettings = {}; tempConfig.newsSettings.speed = parseInt(document.getElementById('conf-news-speed').value) || 3; appConfig = tempConfig; applyTheme(appConfig.theme); db.collection("app_settings").doc("config").set(appConfig).then(()=>{ showToast("บันทึกสำเร็จ"); closeConfig(); renderSidebar(); renderNews(); }); }
+function switchAdminTab(tab) { ['menu','news','calc','saved', 'theme', 'features', 'dashboard'].forEach(t => { const btn = document.getElementById('tab-btn-'+t); const content = document.getElementById('tab-content-'+t); if(btn) btn.className = "px-4 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1"; if(content) content.classList.add('hidden'); }); const activeBtn = document.getElementById('tab-btn-'+tab); const activeContent = document.getElementById('tab-content-'+tab); if(activeBtn) activeBtn.className = "px-4 py-3 text-sm font-bold border-b-2 border-sunny-red text-sunny-red bg-red-50 whitespace-nowrap flex items-center gap-1"; if(activeContent) activeContent.classList.remove('hidden'); if(tab === 'menu') renderAdminMenu(); if(tab === 'news') renderAdminNews(); if(tab === 'saved') renderQuotationsList('saved-quotations-list', 'all'); if(tab === 'features') renderAdminFeatures(); if(tab === 'dashboard') renderAdminDashboard(); }
 function toggleSidebar() { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); sb.classList.toggle('-translate-x-full'); ov.classList.toggle('hidden'); }
 function requestNotificationPermission() { if (!("Notification" in window)) return alert("อุปกรณ์ไม่รองรับ"); Notification.requestPermission().then(p => { if (p === "granted") showToast("เปิดแจ้งเตือนแล้ว"); else alert("กรุณากดอนุญาตเพื่อรับแจ้งเตือน"); renderSidebar(); }); }
 function checkAndNotifyNews(newsItems) { if (!newsItems || newsItems.length === 0) return; const latest = [...newsItems].sort((a,b) => b.id - a.id)[0]; const lastId = parseInt(localStorage.getItem('last_notified_news_id') || '0'); if (latest.id > lastId) { if (Notification.permission === "granted") new Notification("ประกาศใหม่", { body: latest.text, icon: "https://via.placeholder.com/128" }); else showToast("ประกาศใหม่: " + latest.text); localStorage.setItem('last_notified_news_id', latest.id); } }
 function applyTheme(theme) { document.body.classList.remove('theme-christmas'); let primary = '#E63946', dark = '#1D3557', showScene = 'none'; if (theme === 'christmas') { document.body.classList.add('theme-christmas'); primary = '#D62828'; dark = '#14532D'; showScene = 'block'; } const scene = document.getElementById('xmas-scene'); if(scene) scene.style.display = showScene; document.querySelector('meta[name="theme-color"]').setAttribute("content", primary); document.documentElement.style.setProperty('--sunny-red', primary); document.documentElement.style.setProperty('--sunny-dark', dark); }
 
 // --- ADMIN RENDERERS (FULL VERSION) ---
-// ส่วนนี้คือฟังก์ชันที่หายไปในรอบก่อน ผมนำกลับมาใส่ให้ครบแล้วครับ
 function renderAdminCalcInputs() { 
     const container = document.getElementById('tab-content-calc'); 
     if(!container) return; 
     const w = tempConfig.calcSettings.wood; 
     const p = tempConfig.calcSettings.pvc; 
     const r = tempConfig.calcSettings.roller; 
-    
     container.innerHTML = `
         <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between mb-4 sticky top-0 z-10 shadow-sm"><span class="font-bold text-slate-700">เปิดใช้งานระบบคำนวณ</span><input type="checkbox" id="conf-calc-enabled" ${tempConfig.calcSettings.enabled ? 'checked' : ''} class="w-6 h-6 accent-sunny-red" onchange="tempConfig.calcSettings.enabled = this.checked"></div>
         <div class="space-y-6 pb-10">
@@ -421,7 +361,7 @@ function renderAdminMenu() {
     
     // Safety check for menus
     if(!tempConfig.menus || !Array.isArray(tempConfig.menus)) {
-        tempConfig.menus = []; // Prevent crash
+        tempConfig.menus = [];
     }
 
     tempConfig.menus.forEach((menu, idx) => {
@@ -820,7 +760,7 @@ document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL
 const appleIcon = document.getElementById('apple-touch-icon');
 if(appleIcon) appleIcon.setAttribute('href', iconSvgUrl);
 
-// --- APP INIT (Fixed Splash Screen Hang) ---
+// --- APP INIT (FIXED: SPLASH SCREEN & CONFIG) ---
 function initFirebase() {
     try {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -886,14 +826,14 @@ window.addEventListener('DOMContentLoaded', () => {
     checkPwaStatus(); 
     if(typeof renderNews === 'function') renderNews();
     
-    // Fix: Remove Splash Screen Safely
+    // Fix: Force Remove Splash Screen after 2 seconds
     setTimeout(() => {
         const s = document.getElementById('intro-splash');
         if(s) {
             s.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => s.remove(), 700);
         }
-    }, 1500); // Increased delay slightly to ensure loading
+    }, 2000); 
 
     const params = new URLSearchParams(window.location.search);
     const sharedMode = params.get('mode');
