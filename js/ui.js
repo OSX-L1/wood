@@ -6,11 +6,12 @@ const EMOJI_LIST = [
     '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'
 ];
 
-// --- GLOBAL USER PROFILE VAR ---
+// --- GLOBAL VARIABLES ---
 let currentUserProfile = null;
-// [เพิ่ม] ตัวแปรที่ขาดหายไป เพื่อให้ Admin Mode ทำงานได้
+// [เพิ่มใหม่] ตัวแปรจำเป็นสำหรับระบบ Admin ที่โค้ด A ขาดไป
 let tempQuotes = []; 
 let tempConfig = {}; 
+let deferredPrompt; // สำหรับ PWA
 
 function execCmd(command, value = null) {
     document.execCommand(command, false, value);
@@ -322,8 +323,7 @@ function requestNotificationPermission() { if (!("Notification" in window)) retu
 function checkAndNotifyNews(newsItems) { if (!newsItems || newsItems.length === 0) return; const latest = [...newsItems].sort((a,b) => b.id - a.id)[0]; const lastId = parseInt(localStorage.getItem('last_notified_news_id') || '0'); if (latest.id > lastId) { if (Notification.permission === "granted") new Notification("ประกาศใหม่", { body: latest.text, icon: "https://via.placeholder.com/128" }); else showToast("ประกาศใหม่: " + latest.text); localStorage.setItem('last_notified_news_id', latest.id); } }
 function applyTheme(theme) { document.body.classList.remove('theme-christmas'); let primary = '#E63946', dark = '#1D3557', showScene = 'none'; if (theme === 'christmas') { document.body.classList.add('theme-christmas'); primary = '#D62828'; dark = '#14532D'; showScene = 'block'; } const scene = document.getElementById('xmas-scene'); if(scene) scene.style.display = showScene; document.querySelector('meta[name="theme-color"]').setAttribute("content", primary); document.documentElement.style.setProperty('--sunny-red', primary); document.documentElement.style.setProperty('--sunny-dark', dark); }
 
-// --- [ADDED] ADMIN RENDERERS & LOGIC (ส่วนที่ขาดหายไป) ---
-// ส่วนนี้คือฟังก์ชันที่หายไป ทำให้หน้า Admin ไม่แสดงข้อมูล ผมนำกลับมาใส่ให้ครบแล้วครับ
+// --- [ADDED] ADMIN RENDERERS (ฟังก์ชัน Admin ที่หายไป ใส่คืนให้ครบถ้วน) ---
 
 function renderAdminCalcInputs() { 
     const container = document.getElementById('tab-content-calc'); 
@@ -565,7 +565,7 @@ function deleteNews(idx) {
     }
 }
 
-// --- DASHBOARD RENDERER (FULL VERSION) ---
+// --- DASHBOARD RENDERER (ส่วนสำคัญที่เคยขาดหายไป) ---
 async function renderAdminDashboard() {
     const container = document.getElementById('tab-content-dashboard');
     if (!container) return;
@@ -769,8 +769,6 @@ async function renderAdminDashboard() {
 }
 
 // --- PWA INSTALLATION & IOS SUPPORT (HYBRID MODE) ---
-let deferredPrompt;
-
 function isIOS() {
     return [
         'iPad Simulator',
@@ -857,7 +855,7 @@ document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL
 const appleIcon = document.getElementById('apple-touch-icon');
 if(appleIcon) appleIcon.setAttribute('href', iconSvgUrl);
 
-// --- APP INIT (ใช้แบบเดิมที่เว็บไม่ค้าง) ---
+// --- APP INIT (ใช้แบบเดิมของโค้ด A เพื่อความเสถียร ไม่ค้าง) ---
 function initFirebase() {
     try {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -905,7 +903,7 @@ function initFirebase() {
 window.addEventListener('DOMContentLoaded', () => { 
     initFirebase();
     renderSidebar();
-    // setupAutocomplete(); // ฟังก์ชันนี้ไม่มีในโค้ดต้นฉบับ ถ้ามี error ให้ลบบรรทัดนี้ออก
+    setupAutocomplete(); 
     checkPwaStatus(); 
     if(typeof renderNews === 'function') renderNews();
     const params = new URLSearchParams(window.location.search);
