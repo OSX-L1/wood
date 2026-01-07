@@ -6,14 +6,23 @@ const EMOJI_LIST = [
     '❤️', '👍', '⭐', '🌟', '🆕', '🆓', '🆔', '👉', '➡️', '🛑'
 ];
 
-// --- GLOBAL VARIABLES (ประกาศตัวแปรให้ครบ เพื่อกันจอค้าง) ---
+// --- GLOBAL VARIABLES & DEFAULTS (ป้องกัน Error ตัวแปรหาย) ---
 let currentUserProfile = null;
-let deferredPrompt; // For PWA
-let tempQuotes = []; // For Dashboard & History
-let tempConfig = {}; // For Admin Editing
-let configListenerSet = false; // **สำคัญ: ต้องประกาศตัวนี้ ไม่งั้นเว็บค้าง**
+let deferredPrompt; 
+let tempQuotes = []; 
+let configListenerSet = false; 
 
-// --- ICONS FALLBACK (กัน Error ถ้าหาไฟล์ config ไม่เจอ) ---
+// กำหนดค่าเริ่มต้นทันที เพื่อกัน Crash ก่อน Firebase โหลดเสร็จ
+let appConfig = {
+    appTitle: 'SUNNY Stock',
+    menus: [],
+    newsItems: [],
+    calcSettings: { enabled: true, wood: {}, pvc: {}, roller: {} },
+    theme: 'default'
+};
+let tempConfig = JSON.parse(JSON.stringify(appConfig));
+
+// --- FALLBACK ICONS ---
 const ICONS = (typeof window.ICONS !== 'undefined') ? window.ICONS : {
     'wood': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>',
     'curtain': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>',
@@ -127,7 +136,7 @@ function renderUserSidebar(user) {
     }
 }
 
-// --- USER PROFILE & SHOP SETTINGS ---
+// --- USER PROFILE MODAL ---
 function openEditProfile() {
     const modal = document.getElementById('editProfileModal');
     if(!modal) return;
@@ -203,11 +212,12 @@ function saveUserProfile() {
     });
 }
 
+// --- RENDER SIDEBAR (With Safety Check) ---
 function renderSidebar() {
     const container = document.getElementById('sidebar-menu-container');
     if (!container) return;
     
-    // Check if menus exist, if not use default empty
+    // Safety: If config is not yet loaded, use default empty array
     const menus = (appConfig && appConfig.menus) ? appConfig.menus : [];
     
     let html = `<div class="px-6 mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">เช็คสต็อกสินค้า</div>`;
@@ -217,10 +227,7 @@ function renderSidebar() {
         const activeClass = currentSystem === menu.id 
             ? 'bg-red-50 text-sunny-red border-sunny-red' 
             : 'border-transparent text-slate-600 hover:bg-red-100 hover:text-red-700 hover:border-red-600';
-        
-        // Safety for icon
-        const iconSvg = ICONS[menu.icon] || ICONS['wood']; 
-        
+        const iconSvg = ICONS[menu.icon] || ICONS['wood'];
         html += `
             <a href="#" onclick="switchSystem('${menu.id}')" class="menu-item ${activeClass} group flex items-center px-6 py-3 transition-all duration-200 ease-out border-l-4">
                 <div class="w-8 flex justify-center mr-2 transition-transform group-hover:scale-110 duration-200">${iconSvg}</div>
@@ -268,7 +275,9 @@ function renderNews() {
         document.head.appendChild(style);
     }
     
+    // Safety check for news
     const news = (appConfig && appConfig.newsItems) ? appConfig.newsItems : [];
+    
     if(news.length === 0) {
         if(container) container.classList.add('hidden');
         return;
@@ -341,16 +350,14 @@ function handleLogin() { if(document.getElementById('adminPassword').value === '
 function logoutAdmin() { localStorage.removeItem('isAdminLoggedIn'); closeConfig(); showToast("ออกจากระบบแล้ว"); renderSidebar(); }
 
 function openConfig() { 
-    // Ensure tempConfig is initialized
-    tempConfig = (appConfig) ? JSON.parse(JSON.stringify(appConfig)) : {};
-    
-    // Safety Init for missing properties (Prevent Admin Menu Disappearing)
+    // Always parse deep copy from appConfig, ensuring fallbacks
+    tempConfig = JSON.parse(JSON.stringify(appConfig || {}));
     if(!tempConfig.menus) tempConfig.menus = [];
     if(!tempConfig.newsItems) tempConfig.newsItems = [];
     if(!tempConfig.calcSettings) tempConfig.calcSettings = { enabled: true, wood: {}, pvc: {}, roller: {} };
-    if(!tempConfig.features) tempConfig.features = {};
     if(!tempConfig.newsSettings) tempConfig.newsSettings = { speed: 3 };
-    
+    if(!tempConfig.features) tempConfig.features = {};
+
     const modal = document.getElementById('adminConfigModal'); 
     if(modal) modal.classList.remove('hidden'); 
     
@@ -425,7 +432,7 @@ function requestNotificationPermission() { if (!("Notification" in window)) retu
 function checkAndNotifyNews(newsItems) { if (!newsItems || newsItems.length === 0) return; const latest = [...newsItems].sort((a,b) => b.id - a.id)[0]; const lastId = parseInt(localStorage.getItem('last_notified_news_id') || '0'); if (latest.id > lastId) { if (Notification.permission === "granted") new Notification("ประกาศใหม่", { body: latest.text, icon: "https://via.placeholder.com/128" }); else showToast("ประกาศใหม่: " + latest.text); localStorage.setItem('last_notified_news_id', latest.id); } }
 function applyTheme(theme) { document.body.classList.remove('theme-christmas'); let primary = '#E63946', dark = '#1D3557', showScene = 'none'; if (theme === 'christmas') { document.body.classList.add('theme-christmas'); primary = '#D62828'; dark = '#14532D'; showScene = 'block'; } const scene = document.getElementById('xmas-scene'); if(scene) scene.style.display = showScene; document.querySelector('meta[name="theme-color"]').setAttribute("content", primary); document.documentElement.style.setProperty('--sunny-red', primary); document.documentElement.style.setProperty('--sunny-dark', dark); }
 
-// --- ADMIN RENDERERS (FULL VERSION: กู้คืนเมนูจัดการร้านค้าและข่าวสาร) ---
+// --- ADMIN RENDERERS (FULL VERSION) ---
 function renderAdminCalcInputs() { 
     const container = document.getElementById('tab-content-calc'); 
     if(!container) return; 
@@ -852,7 +859,7 @@ document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL
 const appleIcon = document.getElementById('apple-touch-icon');
 if(appleIcon) appleIcon.setAttribute('href', iconSvgUrl);
 
-// --- APP INIT (FIXED: SPLASH SCREEN & CONFIG) ---
+// --- APP INIT (FIXED: STARTUP & SPLASH SCREEN) ---
 function initFirebase() {
     try {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -870,8 +877,11 @@ function initFirebase() {
                 }
                 if(typeof renderUserSidebar === 'function') renderUserSidebar(user);
                 
-                // IMPORTANT: Config Listener logic
-                if (typeof configListenerSet === 'undefined' || !configListenerSet) {
+                // IMPORTANT: Config Listener logic (Fixed Hang)
+                // Remove the 'configListenerSet' check that was causing reference error
+                // Just use a simple flag on window object
+                if (!window.sunnyConfigLoaded) {
+                    window.sunnyConfigLoaded = true;
                     db.collection("app_settings").doc("config").onSnapshot((doc) => {
                         if (doc.exists) {
                             const newData = doc.data();
@@ -902,7 +912,6 @@ function initFirebase() {
                             db.collection("app_settings").doc("config").set(appConfig); 
                         }
                     }, error => console.error("Config Listener Error:", error));
-                    configListenerSet = true;
                 }
             } else {
                 auth.signInAnonymously().catch(e => console.error("Anon Auth Error:", e));
@@ -912,22 +921,21 @@ function initFirebase() {
 }
 
 window.addEventListener('DOMContentLoaded', () => { 
-    initFirebase();
-    renderSidebar();
-    setupAutocomplete();
-    checkPwaStatus(); 
-    if(typeof renderNews === 'function') renderNews();
-    
-    // Fix: Force Remove Splash Screen after 2 seconds
-    // (This fixes the gray screen issue if loading hangs)
+    // FAILSAFE: Force remove splash screen after 2.5s no matter what
     setTimeout(() => {
         const s = document.getElementById('intro-splash');
         if(s) {
             s.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => s.remove(), 700);
         }
-    }, 2000); 
+    }, 2500); 
 
+    initFirebase();
+    renderSidebar();
+    setupAutocomplete();
+    checkPwaStatus(); 
+    if(typeof renderNews === 'function') renderNews();
+    
     const params = new URLSearchParams(window.location.search);
     const sharedMode = params.get('mode');
     if (sharedMode) { checkUrlParams(); } 
