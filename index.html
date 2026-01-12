@@ -33,6 +33,9 @@
     <link rel="stylesheet" href="css/style.css">
     
     <style>
+        /* FAILSAFE SPLASH REMOVAL */
+        body.loaded #intro-splash { opacity: 0; pointer-events: none; }
+        
         .header-custom-bg { position: relative; min-height: 280px; }
         @media (min-width: 768px) { .header-custom-bg { min-height: 380px; } }
 
